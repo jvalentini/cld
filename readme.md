@@ -25,6 +25,16 @@ A complete solution for converting DOCX question files into interactive web-base
 - Docker installed on your system
 - Make utility (comes pre-installed on Linux/Mac, available via WSL on Windows)
 - A DOCX file with properly formatted questions (see format below)
+- (Optional) GitHub account for CI/CD and automatic deployment
+  
+🔄 CI/CD Pipeline
+This project includes a complete GitHub Actions pipeline that automatically:
+
+✅ Builds Docker images on every push
+✅ Parses DOCX files to JSON
+✅ Validates output
+✅ Deploys to GitHub Pages
+✅ Runs tests and checks on PRs
   
 ## 📝 DOCX Format Requirements
 
