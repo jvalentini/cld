@@ -105,7 +105,7 @@ rebuild: ## Rebuild and restart all services
 ##
 
 .PHONY: all
-all: build-parser parse validate build-quiz up ## Build all Docker images
+all: build-parser build-quiz ## Build all Docker images
 
 .PHONY: workflow
 workflow: parse validate ## Complete workflow: parse DOCX and validate output
