@@ -30,11 +30,11 @@ A complete solution for converting DOCX question files into interactive web-base
 🔄 CI/CD Pipeline
 This project includes a complete GitHub Actions pipeline that automatically:
 
-✅ Builds Docker images on every push
-✅ Parses DOCX files to JSON
-✅ Validates output
-✅ Deploys to GitHub Pages
-✅ Runs tests and checks on PRs
+ - ✅ Builds Docker images on every push
+ - ✅ Parses DOCX files to JSON
+ - ✅ Validates output
+ - ✅ Deploys to GitHub Pages
+ - ✅ Runs tests and checks on PRs
   
 ## 📝 DOCX Format Requirements
 
