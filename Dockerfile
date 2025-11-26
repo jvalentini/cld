@@ -12,8 +12,9 @@ COPY parse_questions.py .
 # Make script executable
 RUN chmod +x parse_questions.py
 
-# Create directories for input/output files
-RUN mkdir -p /input /output
+# Create a data directory with wide permissions
+# This allows any user to write to it when mounted
+RUN mkdir -p /data && chmod 777 /data
 
 # Set entrypoint to the script
 ENTRYPOINT ["python", "parse_questions.py"]
