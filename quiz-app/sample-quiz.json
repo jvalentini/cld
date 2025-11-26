@@ -1,0 +1,47 @@
+[
+  {
+    "question": "What is the capital of France?",
+    "answers": [
+      "London",
+      "Paris",
+      "Berlin",
+      "Madrid"
+    ]
+  },
+  {
+    "question": "What is 2 + 2?",
+    "answers": [
+      "3",
+      "4",
+      "5",
+      "6"
+    ]
+  },
+  {
+    "question": "Which planet is closest to the Sun?",
+    "answers": [
+      "Venus",
+      "Earth",
+      "Mercury",
+      "Mars"
+    ]
+  },
+  {
+    "question": "What is the largest ocean on Earth?",
+    "answers": [
+      "Atlantic Ocean",
+      "Indian Ocean",
+      "Arctic Ocean",
+      "Pacific Ocean"
+    ]
+  },
+  {
+    "question": "Who painted the Mona Lisa?",
+    "answers": [
+      "Vincent van Gogh",
+      "Leonardo da Vinci",
+      "Pablo Picasso",
+      "Michelangelo"
+    ]
+  }
+]
