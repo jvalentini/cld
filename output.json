@@ -1,0 +1,29 @@
+[
+  {
+    "question": "What color is the sky?",
+    "answers": [
+      "Blue",
+      "Purple",
+      "None of the above",
+      "It depends"
+    ]
+  },
+  {
+    "question": "Did you use AI tools in creating this solution?",
+    "answers": [
+      "Yes",
+      "No",
+      "A little",
+      "What are AI tools"
+    ]
+  },
+  {
+    "question": "If so, which ones",
+    "answers": [
+      "ChatGPT",
+      "Claude",
+      "Gemini",
+      "Other"
+    ]
+  }
+]
