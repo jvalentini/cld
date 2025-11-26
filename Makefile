@@ -36,6 +36,7 @@ parse: ## Parse DOCX file (usage: make parse INPUT_DOCX=file.docx OUTPUT_JSON=ou
 	docker run --user $(USER_ID):$(GROUP_ID) \
 		-v $(PWD):/data \
 		-w /data \
+		--rm \
 		$(PARSER_IMAGE) $(INPUT_DOCX) $(OUTPUT_JSON)
 	@echo "$(GREEN)✓ Output written to $(OUTPUT_JSON)$(NC)"
 
@@ -60,7 +61,7 @@ build-quiz: ## Build the Vue quiz app Docker image
 .PHONY: run-quiz
 run-quiz: ## Run the quiz app (accessible at http://localhost:8080)
 	@echo "$(GREEN)Starting quiz app at http://localhost:8080$(NC)"
-	docker run -d -p 8080:80 --name $(QUIZ_IMAGE) $(QUIZ_IMAGE)
+	docker run -d -p 8080:80 --rm --name $(QUIZ_IMAGE) $(QUIZ_IMAGE)
 	@echo "$(GREEN)✓ Quiz app running$(NC)"
 
 .PHONY: stop-quiz
@@ -104,7 +105,7 @@ rebuild: ## Rebuild and restart all services
 ##
 
 .PHONY: all
-all: build-parser build-quiz ## Build all Docker images
+all: build-parser parse validate build-quiz up ## Build all Docker images
 
 .PHONY: workflow
 workflow: parse validate ## Complete workflow: parse DOCX and validate output
