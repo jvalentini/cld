@@ -72,6 +72,22 @@ jobs:
       - name: Build parser image locally
         run: |
           docker build -t ${{ env.PARSER_IMAGE }} .
+
+      - name: Run unit tests
+        run: |
+          pip install docx2python coverage
+          python test_parse_questions.py
+          
+      - name: Generate coverage report
+        run: |
+          coverage run test_parse_questions.py
+          coverage report
+          coverage xml
+          
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.xml
       
       - name: Check for input.docx
         id: check_file

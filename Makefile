@@ -49,6 +49,24 @@ validate: ## Validate the output JSON file (usage: make validate OUTPUT_JSON=out
 		echo "$(YELLOW)⚠ File $(OUTPUT_JSON) not found$(NC)"; \
 	fi
 
+.PHONY: test
+test: ## Run unit tests
+	@echo "$(GREEN)Running unit tests...$(NC)"
+	python test_parse_questions.py
+
+.PHONY: test-verbose
+test-verbose: ## Run unit tests with verbose output
+	@echo "$(GREEN)Running unit tests (verbose)...$(NC)"
+	python -m unittest test_parse_questions.py -v
+
+.PHONY: test-coverage
+test-coverage: ## Run tests with coverage report
+	@echo "$(GREEN)Running tests with coverage...$(NC)"
+	pip install coverage 2>/dev/null || true
+	coverage run test_parse_questions.py
+	coverage report
+	@echo "$(GREEN)Run 'coverage html' for detailed report$(NC)"
+
 ##
 ## Quiz App Commands
 ##

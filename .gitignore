@@ -50,5 +50,7 @@ coverage/
 Thumbs.db
 .idea/
 .vscode/
+__pycache__/
+.coverage
   # (optional — keep if you want to share settings)
   # *.
