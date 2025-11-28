@@ -31,20 +31,28 @@ build-parser: ## Build the DOCX parser Docker image
 	docker build -t $(PARSER_IMAGE) -f Dockerfile .
 
 .PHONY: parse
-parse: ## Parse DOCX file (usage: make parse INPUT_DOCX=file.docx OUTPUT_JSON=output.json)
+parse: ## Parse DOCX (multiple choice only, default)
 	@echo "$(GREEN)Parsing $(INPUT_DOCX)...$(NC)"
 	docker run --user $(USER_ID):$(GROUP_ID) \
-		-v $(PWD):/data \
-		-w /data \
-		--rm \
+		-v $(PWD):/work \
+		-w /work \
 		$(PARSER_IMAGE) $(INPUT_DOCX) $(OUTPUT_JSON)
-	@echo "$(GREEN)✓ Output written to $(OUTPUT_JSON)$(NC)"
 
 .PHONY: parse-extended
-parse-extended: ## Parse DOCX with all question types
+parse-extended: ## Parse DOCX (all question types)
+	@echo "$(GREEN)Parsing $(INPUT_DOCX) (extended mode)...$(NC)"
 	docker run --user $(USER_ID):$(GROUP_ID) \
-		-v $(PWD):/work -w /work \
+		-v $(PWD):/work \
+		-w /work \
 		$(PARSER_IMAGE) $(INPUT_DOCX) $(OUTPUT_JSON) --extended
+
+.PHONY: parse-tf
+parse-tf: ## Parse DOCX (true/false only)
+	@echo "$(GREEN)Parsing $(INPUT_DOCX) (true/false only)...$(NC)"
+	docker run --user $(USER_ID):$(GROUP_ID) \
+		-v $(PWD):/work \
+		-w /work \
+		$(PARSER_IMAGE) $(INPUT_DOCX) $(OUTPUT_JSON) --type true_false
 
 .PHONY: validate
 validate: ## Validate the output JSON file (usage: make validate OUTPUT_JSON=output.json)

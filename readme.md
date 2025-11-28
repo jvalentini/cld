@@ -117,10 +117,12 @@ make help          # Show all available commands with descriptions
 ### Parser Commands
 
 ```bash
-make build-parser  # Build the DOCX parser Docker image
-make parse         # Parse DOCX file (uses input.docx by default)
+make build-parser                                        # Build the DOCX parser Docker image
+make parse                                               # Parse DOCX file (uses input.docx by default)
 make parse INPUT_DOCX=file.docx OUTPUT_JSON=output.json  # Parse specific file
-make validate      # Validate the generated JSON file
+make parse-extended                                      # Parse multiple choice and true/false questions
+make parse-tf                                            # True/false only
+make validate                                            # Validate the generated JSON file
 ```
 
 ### Quiz App Commands
