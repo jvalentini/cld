@@ -81,7 +81,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install docx2python click coverage
+          pip install -r quiz-parser/requirements-dev.txt
 
       - name: Run unit tests
         run: |
@@ -254,7 +254,7 @@ jobs:
       
       - name: Install Python dependencies
         run: |
-          pip install docx2python click
+          pip install -r quiz-parser/requirements.txt
       
       - name: Check for validator
         run: |

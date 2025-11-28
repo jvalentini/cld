@@ -175,7 +175,7 @@ clean-all: clean ## Clean everything including Docker images
 .PHONY: install
 install: ## Install Python dependencies locally
 	@echo "$(GREEN)Installing Python dependencies...$(NC)"
-	pip install docx2python click coverage
+	pip install -r requirements.txt
 	@echo "$(GREEN)✓ Dependencies installed$(NC)"
 
 .PHONY: check
