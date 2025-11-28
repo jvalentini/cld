@@ -1,5 +1,5 @@
 <script setup>
-import { supabase } from './supabaseClient'
+import { supabase } from "./supabaseClient";
 </script>
 <template>
   <div class="container">
@@ -474,17 +474,23 @@ export default {
           const labels =
             q.type === "true_false" ? ["T", "F"] : ["A", "B", "C", "D"];
           const answerPromises = q.answers.map(async (ans, ansIndex) => {
-            return await supabase
+            const { data, error } = await supabase
               .from("answers")
               .insert({
                 question_id: question.id, // Foreign key to question
                 answer_text: ans,
                 answer_label: labels[ansIndex],
-                is_correct: false, // Set default, can be updated later
                 guesses: 0,
               })
               .select()
               .single();
+
+            if (error) {
+              console.error("Answer insert error:", error);
+              throw new Error(`Failed to insert answer: ${error.message}`);
+            }
+
+            return { data, error };
           });
 
           const answerResults = await Promise.all(answerPromises);
@@ -498,12 +504,6 @@ export default {
               .from("questions")
               .update({ correct_answer_id: correctAnswerId })
               .eq("id", question.id);
-            
-            // Also mark the answer as correct
-            await supabase
-              .from("answers")
-              .update({ is_correct: true })
-              .eq("id", correctAnswerId);
           }
 
           return {
@@ -518,20 +518,18 @@ export default {
         this.questions = this.uploadedQuizData;
         this.questionIds = results.map((r) => r.question.id);
         this.answerIds = results.map((r) => r.answers.map((a) => a.id));
-        
+
         // Set correct answers from JSON if available
         this.correctAnswers = this.questions.map((q, idx) => {
           if (q.correct_answer !== undefined) {
             return q.correct_answer;
           }
           // Default to random for demo if not specified
-          return Math.floor(
-            Math.random() * (q.type === "true_false" ? 2 : 4)
-          );
+          return Math.floor(Math.random() * (q.type === "true_false" ? 2 : 4));
         });
 
         this.success = `Quiz "${this.uploadedQuizName}" saved to database successfully with ${results.length} questions!`;
-        
+
         // Start the quiz
         this.initializeQuiz();
 
@@ -539,14 +537,33 @@ export default {
         await this.loadAvailableQuizzes();
       } catch (err) {
         console.error("Error saving quiz:", err);
-        
+        console.error("Error details:", {
+          message: err.message,
+          stack: err.stack,
+          name: err.name,
+        });
+
         // Check if it's an RLS error
-        if (err.message && err.message.includes('row-level security policy')) {
+        if (err.message && err.message.includes("row-level security policy")) {
           this.error = `Database security error: Row Level Security (RLS) is blocking the insert. 
           
           To fix this, you need to either:
           1. Disable RLS on the quizzes, questions, and answers tables, OR
           2. Add RLS policies that allow inserts (see the RLS_SETUP.md file for instructions)`;
+        } else if (
+          err.message &&
+          err.message.includes("Failed to insert answer")
+        ) {
+          this.error = `Failed to insert answers: ${err.message}
+          
+          This might be a database schema issue. Check that your 'answers' table has these columns:
+          - id (primary key)
+          - question_id (foreign key to questions.id)
+          - answer_text (text)
+          - answer_label (text)
+          - guesses (integer, default 0)
+          
+          See DATABASE_SCHEMA.md for the complete schema.`;
         } else {
           this.error = `Failed to save quiz to database: ${err.message}`;
         }
@@ -599,17 +616,33 @@ export default {
       this.clearProgress();
     },
     resetQuiz() {
-      this.userAnswers = new Array(this.questions.length).fill(null);
+      // Reset all quiz state
+      this.questions = [];
+      this.questionIds = [];
+      this.answerIds = [];
+      this.userAnswers = [];
+      this.correctAnswers = [];
       this.currentQuestionIndex = 0;
       this.quizCompleted = false;
-      this.correctAnswers = this.questions.map((q) => {
-        if (q.type === "true_false") {
-          return Math.floor(Math.random() * 2);
-        } else {
-          return Math.floor(Math.random() * 4);
-        }
-      });
+      this.quizStarted = false;
+
+      // Reset quiz selection
+      this.currentQuizId = null;
+      this.selectedQuizId = "";
+
+      // Reset file upload state
+      this.uploadedQuizName = "";
+      this.uploadedQuizData = null;
+
+      // Clear messages
+      this.error = null;
+      this.success = null;
+
+      // Clear progress
       this.clearProgress();
+
+      // Reload available quizzes
+      this.loadAvailableQuizzes();
     },
     getAnswerLabel(index) {
       if (this.currentQuestion.type === "true_false") {
@@ -675,7 +708,7 @@ export default {
   mounted() {
     // Load available quizzes from database
     this.loadAvailableQuizzes();
-    
+
     const savedProgress = this.loadProgress();
     if (savedProgress && savedProgress.questions.length > 0) {
       const resumeQuiz = confirm(
