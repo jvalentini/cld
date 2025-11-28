@@ -8,6 +8,7 @@ import json
 import tempfile
 import os
 from unittest.mock import patch, MagicMock
+from click.testing import CliRunner
 from parse_questions import (
     parse_docx_questions,
     parse_multiple_choice_questions,
@@ -306,58 +307,38 @@ Assume that this is captured."""
 
 
 class TestMainFunction(unittest.TestCase):
-    """Test cases for the main function"""
+    """Test cases for the main CLI function"""
 
-    def test_insufficient_arguments(self):
-        """Test main function with insufficient arguments"""
-        with patch("sys.argv", ["parse_questions.py"]):
-            with self.assertRaises(SystemExit) as context:
-                main()
-            self.assertEqual(context.exception.code, 1)
+    def setUp(self):
+        """Set up test fixtures"""
+        self.runner = CliRunner()
 
-    def test_too_many_arguments(self):
-        """Test main function with too many arguments"""
-        with patch(
-            "sys.argv", ["parse_questions.py", "in.docx", "out.json", "all", "extra"]
-        ):
-            with self.assertRaises(SystemExit) as context:
-                main()
-            self.assertEqual(context.exception.code, 1)
+    def test_help_option(self):
+        """Test that --help displays help message"""
+        result = self.runner.invoke(main, ["--help"])
 
-    @patch("parse_questions.docx2python")
-    @patch("builtins.open", create=True)
-    def test_successful_parse_with_type(self, mock_open, mock_docx2python):
-        """Test successful parsing with question type specified"""
-        mock_doc = MagicMock()
-        mock_doc.text = """Question
-Test question?
-A. Answer 1
-B. Answer 2
-C. Answer 3
-D. Answer 4"""
-        mock_docx2python.return_value.__enter__.return_value = mock_doc
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn("Parse a DOCX file", result.output)
+        self.assertIn("--extended", result.output)
+        self.assertIn("--type", result.output)
 
-        mock_file = MagicMock()
-        mock_open.return_value.__enter__.return_value = mock_file
+    def test_help_short_option(self):
+        """Test that -h displays help message"""
+        result = self.runner.invoke(main, ["-h"])
 
-        with patch(
-            "sys.argv",
-            ["parse_questions.py", "input.docx", "output.json", "multiple_choice"],
-        ):
-            with patch("builtins.print") as mock_print:
-                main()
-                # Check that success message was printed
-                self.assertTrue(
-                    any(
-                        "Successfully parsed" in str(call)
-                        for call in mock_print.call_args_list
-                    )
-                )
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn("Parse a DOCX file", result.output)
+
+    def test_missing_arguments(self):
+        """Test CLI with missing arguments"""
+        result = self.runner.invoke(main, [])
+
+        self.assertNotEqual(result.exit_code, 0)
+        self.assertIn("Missing argument", result.output)
 
     @patch("parse_questions.docx2python")
-    @patch("builtins.open", create=True)
-    def test_successful_parse_default_type(self, mock_open, mock_docx2python):
-        """Test successful parsing with default question type (all)"""
+    def test_default_behavior_multiple_choice_only(self, mock_docx2python):
+        """Test default behavior parses only multiple choice questions"""
         mock_doc = MagicMock()
         mock_doc.text = """Question
 Test question?
@@ -366,75 +347,208 @@ B. Answer 2
 C. Answer 3
 D. Answer 4
 
-Assume this is true."""
+Assume this should be ignored by default."""
         mock_docx2python.return_value.__enter__.return_value = mock_doc
 
-        mock_file = MagicMock()
-        mock_open.return_value.__enter__.return_value = mock_file
+        with self.runner.isolated_filesystem():
+            # Create a dummy input file
+            with open("input.docx", "w") as f:
+                f.write("dummy")
 
-        with patch("sys.argv", ["parse_questions.py", "input.docx", "output.json"]):
-            with patch("builtins.print") as mock_print:
-                main()
-                # Check that both types were counted
-                print_calls = [str(call) for call in mock_print.call_args_list]
-                self.assertTrue(any("Multiple choice" in call for call in print_calls))
-                self.assertTrue(any("True/False" in call for call in print_calls))
+            result = self.runner.invoke(main, ["input.docx", "output.json"])
 
-    @patch("parse_questions.docx2python")
-    def test_output_json_format_mixed_types(self, mock_docx2python):
-        """Test that output JSON has correct format with mixed question types"""
-        mock_doc = MagicMock()
-        mock_doc.text = """Question
-Test question?
-A. Answer 1
-B. Answer 2
-C. Answer 3
-D. Answer 4
+            self.assertEqual(result.exit_code, 0)
+            self.assertIn("Successfully parsed", result.output)
+            self.assertIn("Multiple choice: 1", result.output)
+            self.assertNotIn("True/False", result.output)
 
-Assume this is a true/false question."""
-        mock_docx2python.return_value.__enter__.return_value = mock_doc
-
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tmp:
-            output_path = tmp.name
-
-        try:
-            with patch("sys.argv", ["parse_questions.py", "input.docx", output_path]):
-                main()
-
-            # Read and validate JSON
-            with open(output_path, "r", encoding="utf-8") as f:
+            # Check output file
+            with open("output.json", "r") as f:
                 data = json.load(f)
 
-            self.assertIsInstance(data, list)
+            self.assertEqual(len(data), 1)
+            self.assertEqual(data[0]["type"], "multiple_choice")
+
+    @patch("parse_questions.docx2python")
+    def test_extended_flag(self, mock_docx2python):
+        """Test --extended flag parses both question types"""
+        mock_doc = MagicMock()
+        mock_doc.text = """Question
+Test question?
+A. Answer 1
+B. Answer 2
+C. Answer 3
+D. Answer 4
+
+Assume this should be included."""
+        mock_docx2python.return_value.__enter__.return_value = mock_doc
+
+        with self.runner.isolated_filesystem():
+            with open("input.docx", "w") as f:
+                f.write("dummy")
+
+            result = self.runner.invoke(
+                main, ["input.docx", "output.json", "--extended"]
+            )
+
+            self.assertEqual(result.exit_code, 0)
+            self.assertIn("Multiple choice: 1", result.output)
+            self.assertIn("True/False: 1", result.output)
+
+            # Check output file
+            with open("output.json", "r") as f:
+                data = json.load(f)
+
             self.assertEqual(len(data), 2)
 
-            # Validate multiple choice question
-            mc_q = [q for q in data if q["type"] == "multiple_choice"][0]
-            self.assertIn("question", mc_q)
-            self.assertIn("answers", mc_q)
-            self.assertIn("type", mc_q)
-            self.assertEqual(len(mc_q["answers"]), 4)
+    @patch("parse_questions.docx2python")
+    def test_type_option_multiple_choice(self, mock_docx2python):
+        """Test --type multiple_choice option"""
+        mock_doc = MagicMock()
+        mock_doc.text = """Question
+Test question?
+A. Answer 1
+B. Answer 2
+C. Answer 3
+D. Answer 4
 
-            # Validate true/false question
-            tf_q = [q for q in data if q["type"] == "true_false"][0]
-            self.assertIn("question", tf_q)
-            self.assertIn("answers", tf_q)
-            self.assertIn("type", tf_q)
-            self.assertEqual(tf_q["answers"], ["True", "False"])
-        finally:
-            os.unlink(output_path)
+Assume this should be ignored."""
+        mock_docx2python.return_value.__enter__.return_value = mock_doc
+
+        with self.runner.isolated_filesystem():
+            with open("input.docx", "w") as f:
+                f.write("dummy")
+
+            result = self.runner.invoke(
+                main, ["input.docx", "output.json", "--type", "multiple_choice"]
+            )
+
+            self.assertEqual(result.exit_code, 0)
+
+            with open("output.json", "r") as f:
+                data = json.load(f)
+
+            self.assertEqual(len(data), 1)
+            self.assertEqual(data[0]["type"], "multiple_choice")
+
+    @patch("parse_questions.docx2python")
+    def test_type_option_true_false(self, mock_docx2python):
+        """Test --type true_false option"""
+        mock_doc = MagicMock()
+        mock_doc.text = """Question
+This should be ignored.
+A. Answer 1
+B. Answer 2
+C. Answer 3
+D. Answer 4
+
+Assume this should be captured."""
+        mock_docx2python.return_value.__enter__.return_value = mock_doc
+
+        with self.runner.isolated_filesystem():
+            with open("input.docx", "w") as f:
+                f.write("dummy")
+
+            result = self.runner.invoke(
+                main, ["input.docx", "output.json", "--type", "true_false"]
+            )
+
+            self.assertEqual(result.exit_code, 0)
+
+            with open("output.json", "r") as f:
+                data = json.load(f)
+
+            self.assertEqual(len(data), 1)
+            self.assertEqual(data[0]["type"], "true_false")
+
+    @patch("parse_questions.docx2python")
+    def test_type_option_all(self, mock_docx2python):
+        """Test --type all option"""
+        mock_doc = MagicMock()
+        mock_doc.text = """Question
+Test?
+A. Answer 1
+B. Answer 2
+C. Answer 3
+D. Answer 4
+
+Assume this."""
+        mock_docx2python.return_value.__enter__.return_value = mock_doc
+
+        with self.runner.isolated_filesystem():
+            with open("input.docx", "w") as f:
+                f.write("dummy")
+
+            result = self.runner.invoke(
+                main, ["input.docx", "output.json", "--type", "all"]
+            )
+
+            self.assertEqual(result.exit_code, 0)
+
+            with open("output.json", "r") as f:
+                data = json.load(f)
+
+            self.assertEqual(len(data), 2)
+
+    @patch("parse_questions.docx2python")
+    def test_type_overrides_extended(self, mock_docx2python):
+        """Test that --type option overrides --extended flag"""
+        mock_doc = MagicMock()
+        mock_doc.text = """Question
+Test?
+A. Answer 1
+B. Answer 2
+C. Answer 3
+D. Answer 4
+
+Assume this."""
+        mock_docx2python.return_value.__enter__.return_value = mock_doc
+
+        with self.runner.isolated_filesystem():
+            with open("input.docx", "w") as f:
+                f.write("dummy")
+
+            # --type multiple_choice should override --extended
+            result = self.runner.invoke(
+                main,
+                [
+                    "input.docx",
+                    "output.json",
+                    "--extended",
+                    "--type",
+                    "multiple_choice",
+                ],
+            )
+
+            self.assertEqual(result.exit_code, 0)
+
+            with open("output.json", "r") as f:
+                data = json.load(f)
+
+            # Should only have multiple choice despite --extended
+            self.assertEqual(len(data), 1)
+            self.assertEqual(data[0]["type"], "multiple_choice")
+
+    def test_file_not_found(self):
+        """Test CLI with non-existent input file"""
+        with self.runner.isolated_filesystem():
+            result = self.runner.invoke(main, ["nonexistent.docx", "output.json"])
+
+            self.assertNotEqual(result.exit_code, 0)
 
     @patch("parse_questions.parse_docx_questions")
-    def test_invalid_question_type_argument(self, mock_parse):
-        """Test main function with invalid question type"""
-        mock_parse.side_effect = ValueError("Invalid question_type")
+    def test_parsing_error(self, mock_parse):
+        """Test CLI with parsing error"""
+        mock_parse.side_effect = ValueError("Parsing error")
 
-        with patch(
-            "sys.argv", ["parse_questions.py", "input.docx", "output.json", "invalid"]
-        ):
-            with self.assertRaises(SystemExit) as context:
-                main()
-            self.assertEqual(context.exception.code, 1)
+        with self.runner.isolated_filesystem():
+            with open("input.docx", "w") as f:
+                f.write("dummy")
+
+            result = self.runner.invoke(main, ["input.docx", "output.json"])
+
+            self.assertNotEqual(result.exit_code, 0)
+            self.assertIn("Parsing Error", result.output)
 
 
 class TestIntegration(unittest.TestCase):

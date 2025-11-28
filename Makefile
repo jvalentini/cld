@@ -40,6 +40,12 @@ parse: ## Parse DOCX file (usage: make parse INPUT_DOCX=file.docx OUTPUT_JSON=ou
 		$(PARSER_IMAGE) $(INPUT_DOCX) $(OUTPUT_JSON)
 	@echo "$(GREEN)✓ Output written to $(OUTPUT_JSON)$(NC)"
 
+.PHONY: parse-extended
+parse-extended: ## Parse DOCX with all question types
+	docker run --user $(USER_ID):$(GROUP_ID) \
+		-v $(PWD):/work -w /work \
+		$(PARSER_IMAGE) $(INPUT_DOCX) $(OUTPUT_JSON) --extended
+
 .PHONY: validate
 validate: ## Validate the output JSON file (usage: make validate OUTPUT_JSON=output.json)
 	@echo "$(GREEN)Validating $(OUTPUT_JSON)...$(NC)"

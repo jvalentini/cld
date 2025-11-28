@@ -1,10 +1,10 @@
-FROM python:3.14-slim
+FROM python:3.11-slim
 
 # Set working directory
 WORKDIR /app
 
 # Install dependencies
-RUN pip install --no-cache-dir docx2python
+RUN pip install --no-cache-dir docx2python click
 
 # Copy the script
 COPY parse_questions.py .

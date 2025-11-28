@@ -5,9 +5,9 @@ Parses a DOCX file to extract questions and their answer choices.
 Supports both multiple-choice questions and true/false assumption questions.
 """
 
-import sys
 import json
 import re
+import click
 from docx2python import docx2python
 from typing import List, Dict
 
@@ -156,45 +156,80 @@ def parse_docx_questions(docx_path: str, question_type: str = "all") -> List[Dic
     return questions
 
 
-def main():
-    if len(sys.argv) < 3 or len(sys.argv) > 4:
-        print(
-            "Usage: python parse_questions.py <input.docx> <output.json> [question_type]"
-        )
-        print(
-            "  question_type: 'multiple_choice', 'true_false', or 'all' (default: 'all')"
-        )
-        sys.exit(1)
+@click.command()
+@click.argument("input_docx", type=click.Path(exists=True))
+@click.argument("output_json", type=click.Path())
+@click.option(
+    "--extended",
+    is_flag=True,
+    help="Parse both multiple-choice and true/false questions. By default, only multiple-choice questions are parsed.",
+)
+@click.option(
+    "--type",
+    "question_type",
+    type=click.Choice(["multiple_choice", "true_false", "all"], case_sensitive=False),
+    default=None,
+    help="Specify question type to parse. Overrides --extended flag.",
+)
+@click.help_option("--help", "-h")
+def main(input_docx, output_json, extended, question_type):
+    """
+    Parse a DOCX file and extract quiz questions.
 
-    input_path = sys.argv[1]
-    output_path = sys.argv[2]
-    question_type = sys.argv[3] if len(sys.argv) == 4 else "all"
+    INPUT_DOCX: Path to the input DOCX file containing questions
+
+    OUTPUT_JSON: Path where the parsed JSON output will be saved
+
+    \b
+    Examples:
+      # Parse only multiple-choice questions (default)
+      python parse_questions.py input.docx output.json
+
+      # Parse both multiple-choice and true/false questions
+      python parse_questions.py input.docx output.json --extended
+
+      # Parse only true/false questions
+      python parse_questions.py input.docx output.json --type true_false
+    """
+    # Determine which question types to parse
+    if question_type:
+        # Explicit type overrides everything
+        parse_type = question_type
+    elif extended:
+        # Extended flag means parse all types
+        parse_type = "all"
+    else:
+        # Default: only multiple choice
+        parse_type = "multiple_choice"
 
     try:
-        questions = parse_docx_questions(input_path, question_type)
+        click.echo(f"📄 Reading: {input_docx}")
+        questions = parse_docx_questions(input_docx, parse_type)
 
         # Write to JSON file
-        with open(output_path, "w", encoding="utf-8") as f:
+        with open(output_json, "w", encoding="utf-8") as f:
             json.dump(questions, f, indent=2, ensure_ascii=False)
 
         # Count question types
         mc_count = sum(1 for q in questions if q["type"] == "multiple_choice")
         tf_count = sum(1 for q in questions if q["type"] == "true_false")
 
-        print(f"Successfully parsed {len(questions)} question(s)")
-        print(f"  - Multiple choice: {mc_count}")
-        print(f"  - True/False: {tf_count}")
-        print(f"Output written to: {output_path}")
+        click.echo(f"\n✅ Successfully parsed {len(questions)} question(s)")
+        if mc_count > 0:
+            click.echo(f"   • Multiple choice: {mc_count}")
+        if tf_count > 0:
+            click.echo(f"   • True/False: {tf_count}")
+        click.echo(f"\n💾 Output written to: {output_json}")
 
     except FileNotFoundError:
-        print(f"Error: Could not find file '{input_path}'")
-        sys.exit(1)
+        click.echo(f"❌ Error: Could not find file '{input_docx}'", err=True)
+        raise click.Abort()
     except ValueError as e:
-        print(f"Parsing Error: {e}")
-        sys.exit(1)
+        click.echo(f"❌ Parsing Error: {e}", err=True)
+        raise click.Abort()
     except Exception as e:
-        print(f"Unexpected Error: {e}")
-        sys.exit(1)
+        click.echo(f"❌ Unexpected Error: {e}", err=True)
+        raise click.Abort()
 
 
 if __name__ == "__main__":
