@@ -1,0 +1,12 @@
+[
+  {
+    "question": "What is the capital of France?",
+    "answers": ["London", "Paris", "Berlin", "Madrid"],
+    "type": "multiple_choice"
+  },
+  {
+    "question": "Assume that the user is authenticated.",
+    "answers": ["True", "False"],
+    "type": "true_false"
+  }
+]

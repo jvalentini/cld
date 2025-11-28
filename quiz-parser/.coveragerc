@@ -1,0 +1,22 @@
+[run]
+omit =
+    # Ignore pyenv virtual environments completely
+    .pyenv/*
+    */.pyenv/*
+
+    # Also good to ignore common virtualenv patterns
+    .venv/*
+    */.venv/*
+    venv/*
+    */venv/*
+    env/*
+    .tox/*
+    */site-packages/*
+
+[report]
+# Optionally exclude lines with # pragma: no cover
+exclude_lines =
+    pragma: no cover
+    raise NotImplementedError
+    raise AssertionError
+    if __name__ == .__main__.:

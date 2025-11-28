@@ -49,8 +49,8 @@ jobs:
       - name: Build and push parser image
         uses: docker/build-push-action@v5
         with:
-          context: .
-          file: ./Dockerfile
+          context: ./quiz-parser
+          file: ./quiz-parser/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -71,15 +71,26 @@ jobs:
       
       - name: Build parser image locally
         run: |
+          cd quiz-parser
           docker build -t ${{ env.PARSER_IMAGE }} .
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r quiz-parser/requirements-dev.txt
 
       - name: Run unit tests
         run: |
-          pip install docx2python coverage
+          cd quiz-parser
           python test_parse_questions.py
           
       - name: Generate coverage report
         run: |
+          cd quiz-parser
           coverage run test_parse_questions.py
           coverage report
           coverage xml
@@ -87,12 +98,13 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
-          files: ./coverage.xml
+          files: ./quiz-parser/coverage.xml
+          flags: parser
       
       - name: Check for input.docx
         id: check_file
         run: |
-          if [ -f "input.docx" ]; then
+          if [ -f "quiz-parser/input.docx" ]; then
             echo "file_exists=true" >> $GITHUB_OUTPUT
             echo "✓ Found input.docx"
           else
@@ -103,6 +115,7 @@ jobs:
       - name: Parse DOCX to JSON
         if: steps.check_file.outputs.file_exists == 'true'
         run: |
+          cd quiz-parser
           docker run --user $(id -u):$(id -g) \
             -v $(pwd):/work \
             -w /work \
@@ -112,9 +125,9 @@ jobs:
       - name: Validate output JSON
         if: steps.check_file.outputs.file_exists == 'true'
         run: |
-          if [ -f "output.json" ]; then
+          if [ -f "quiz-parser/output.json" ]; then
             echo "✓ output.json created"
-            cat output.json | jq . > /dev/null && echo "✓ Valid JSON" || (echo "✗ Invalid JSON" && exit 1)
+            cat quiz-parser/output.json | jq . > /dev/null && echo "✓ Valid JSON" || (echo "✗ Invalid JSON" && exit 1)
           else
             echo "✗ output.json not found"
             exit 1
@@ -125,7 +138,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: quiz-json
-          path: output.json
+          path: quiz-parser/output.json
           retention-days: 30
 
   build-quiz-app:
@@ -241,12 +254,11 @@ jobs:
       
       - name: Install Python dependencies
         run: |
-          pip install docx2python
+          pip install -r quiz-parser/requirements.txt
       
-      - name: Create test DOCX
+      - name: Check for validator
         run: |
-          # Create a simple test if validate_quiz.py exists
-          if [ -f "validate_quiz.py" ]; then
+          if [ -f "quiz-parser/validate_quiz.py" ]; then
             echo "✓ Validator found"
           fi
       
@@ -254,13 +266,14 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: quiz-json
-          path: .
+          path: quiz-parser
         continue-on-error: true
       
       - name: Validate quiz JSON
-        if: hashFiles('output.json') != ''
+        if: hashFiles('quiz-parser/output.json') != ''
         run: |
-          if [ -f "validate_quiz.py" ]; then
+          if [ -f "quiz-parser/validate_quiz.py" ]; then
+            cd quiz-parser
             python validate_quiz.py output.json
           else
             echo "⚠ No validator found, skipping validation"

@@ -1,0 +1,4 @@
+click==8.3.1
+docx2python==3.5.0
+lxml==6.0.2
+
