@@ -1,0 +1,56 @@
+# -----------------------------
+# Node / npm / pnpm / yarn
+# -----------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# -----------------------------
+# Build / Dist
+# -----------------------------
+dist/
+dist-ssr/
+*.local
+/build/
+/out/
+
+# -----------------------------
+# Vite-specific
+# -----------------------------
+.env.local
+.env.*.local          # e.g. .env.development.local
+.vite/                # Vite cache (HMR, etc.)
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# -----------------------------
+# Vue CLI (if you still use it)
+/.vue-cli/
+.vue-cli-service/
+
+# -----------------------------
+# Logs & temp
+# -----------------------------
+*.log
+*.log.*
+npm-debug.log*
+.lighthouseci/
+coverage/
+.nyc_output/
+
+# -----------------------------
+# Editor / OS junk
+# -----------------------------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+__pycache__/
+.coverage
+  # (optional — keep if you want to share settings)
+  # *.

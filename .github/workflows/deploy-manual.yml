@@ -1,0 +1,163 @@
+name: Manual Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+      deploy_pages:
+        description: 'Deploy to GitHub Pages'
+        required: true
+        type: boolean
+        default: true
+      parse_docx:
+        description: 'Parse DOCX file before deployment'
+        required: true
+        type: boolean
+        default: false
+      docx_file:
+        description: 'DOCX filename (if parsing)'
+        required: false
+        default: 'input.docx'
+
+env:
+  QUIZ_IMAGE: quiz-app
+
+jobs:
+  parse-if-requested:
+    name: Parse DOCX (Optional)
+    runs-on: ubuntu-latest
+    if: inputs.parse_docx == true
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Build parser image
+        run: docker build -t docx-parser .
+      
+      - name: Check for DOCX file
+        id: check
+        run: |
+          if [ -f "${{ inputs.docx_file }}" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "⚠️ Warning: ${{ inputs.docx_file }} not found"
+          fi
+      
+      - name: Parse DOCX
+        if: steps.check.outputs.exists == 'true'
+        run: |
+          docker run --user $(id -u):$(id -g) \
+            -v $(pwd):/work \
+            -w /work \
+            docx-parser ${{ inputs.docx_file }} output.json
+      
+      - name: Upload parsed JSON
+        if: steps.check.outputs.exists == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: parsed-quiz
+          path: output.json
+
+  build-and-deploy:
+    name: Build & Deploy Quiz App
+    runs-on: ubuntu-latest
+    needs: parse-if-requested
+    if: always()
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    
+    environment:
+      name: ${{ inputs.environment }}
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Download parsed quiz (if available)
+        if: inputs.parse_docx == true
+        uses: actions/download-artifact@v4
+        with:
+          name: parsed-quiz
+          path: quiz-app/public/
+        continue-on-error: true
+      
+      - name: Build quiz app
+        run: |
+          cd quiz-app
+          docker build -t ${{ env.QUIZ_IMAGE }} .
+      
+      - name: Extract built files
+        run: |
+          docker create --name temp-container ${{ env.QUIZ_IMAGE }}
+          docker cp temp-container:/usr/share/nginx/html ./dist
+          docker rm temp-container
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: quiz-app-${{ inputs.environment }}
+          path: dist/
+      
+      - name: Setup Pages
+        if: inputs.deploy_pages == true
+        uses: actions/configure-pages@v4
+      
+      - name: Upload to GitHub Pages
+        if: inputs.deploy_pages == true
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      
+      - name: Deploy to GitHub Pages
+        if: inputs.deploy_pages == true
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  deployment-summary:
+    name: Deployment Summary
+    runs-on: ubuntu-latest
+    needs: [build-and-deploy]
+    if: always()
+    
+    steps:
+      - name: Create summary
+        run: |
+          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Parse DOCX:** ${{ inputs.parse_docx }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Deploy to Pages:** ${{ inputs.deploy_pages }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.build-and-deploy.result }}" == "success" ]; then
+            echo "### ✅ Deployment Successful" >> $GITHUB_STEP_SUMMARY
+            
+            if [ "${{ inputs.deploy_pages }}" == "true" ]; then
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "🌐 Your quiz app is live!" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "Access it at: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "### ❌ Deployment Failed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Check the logs above for details." >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY

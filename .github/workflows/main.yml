@@ -1,0 +1,307 @@
+name: Quiz App CI/CD
+
+on:
+  push:
+    branches: [ master, develop ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:  # Allow manual trigger
+
+env:
+  PARSER_IMAGE: docx-parser
+  QUIZ_IMAGE: quiz-app
+  REGISTRY: ghcr.io
+
+jobs:
+  build-parser:
+    name: Build DOCX Parser
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}/${{ env.PARSER_IMAGE }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+      
+      - name: Build and push parser image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./quiz-parser
+          file: ./quiz-parser/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  parse-docx:
+    name: Parse DOCX File
+    runs-on: ubuntu-latest
+    needs: build-parser
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Build parser image locally
+        run: |
+          cd quiz-parser
+          docker build -t ${{ env.PARSER_IMAGE }} .
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r quiz-parser/requirements-dev.txt
+
+      - name: Run unit tests
+        run: |
+          cd quiz-parser
+          python test_parse_questions.py
+          
+      - name: Generate coverage report
+        run: |
+          cd quiz-parser
+          coverage run test_parse_questions.py
+          coverage report
+          coverage xml
+          
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./quiz-parser/coverage.xml
+          flags: parser
+      
+      - name: Check for input.docx
+        id: check_file
+        run: |
+          if [ -f "quiz-parser/input.docx" ]; then
+            echo "file_exists=true" >> $GITHUB_OUTPUT
+            echo "✓ Found input.docx"
+          else
+            echo "file_exists=false" >> $GITHUB_OUTPUT
+            echo "⚠ No input.docx found, skipping parse"
+          fi
+      
+      - name: Parse DOCX to JSON
+        if: steps.check_file.outputs.file_exists == 'true'
+        run: |
+          cd quiz-parser
+          docker run --user $(id -u):$(id -g) \
+            -v $(pwd):/work \
+            -w /work \
+            ${{ env.PARSER_IMAGE }} input.docx output.json
+          echo "✓ Successfully parsed input.docx"
+      
+      - name: Validate output JSON
+        if: steps.check_file.outputs.file_exists == 'true'
+        run: |
+          if [ -f "quiz-parser/output.json" ]; then
+            echo "✓ output.json created"
+            cat quiz-parser/output.json | jq . > /dev/null && echo "✓ Valid JSON" || (echo "✗ Invalid JSON" && exit 1)
+          else
+            echo "✗ output.json not found"
+            exit 1
+          fi
+      
+      - name: Upload quiz JSON artifact
+        if: steps.check_file.outputs.file_exists == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: quiz-json
+          path: quiz-parser/output.json
+          retention-days: 30
+
+  build-quiz-app:
+    name: Build Quiz Web App
+    runs-on: ubuntu-latest
+    needs: parse-docx
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}/${{ env.QUIZ_IMAGE }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+      
+      - name: Build and push quiz app image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./quiz-app
+          file: ./quiz-app/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Build quiz app for deployment
+        run: |
+          cd quiz-app
+          docker build -t ${{ env.QUIZ_IMAGE }} .
+      
+      - name: Export built files
+        run: |
+          # Create a temporary container to extract built files
+          docker create --name temp-container ${{ env.QUIZ_IMAGE }}
+          docker cp temp-container:/usr/share/nginx/html ./dist
+          docker rm temp-container
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: quiz-app-dist
+          path: dist/
+          retention-days: 30
+
+  deploy-to-pages:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: build-quiz-app
+    if: github.ref == 'refs/heads/master'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: quiz-app-dist
+          path: dist
+      
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      
+      - name: Upload to GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  test-and-validate:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    needs: [build-parser, build-quiz-app]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install Python dependencies
+        run: |
+          pip install -r quiz-parser/requirements.txt
+      
+      - name: Check for validator
+        run: |
+          if [ -f "quiz-parser/validate_quiz.py" ]; then
+            echo "✓ Validator found"
+          fi
+      
+      - name: Download quiz JSON artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: quiz-json
+          path: quiz-parser
+        continue-on-error: true
+      
+      - name: Validate quiz JSON
+        if: hashFiles('quiz-parser/output.json') != ''
+        run: |
+          if [ -f "quiz-parser/validate_quiz.py" ]; then
+            cd quiz-parser
+            python validate_quiz.py output.json
+          else
+            echo "⚠ No validator found, skipping validation"
+          fi
+
+  summary:
+    name: Build Summary
+    runs-on: ubuntu-latest
+    needs: [build-parser, parse-docx, build-quiz-app, test-and-validate]
+    if: always()
+    
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## 🎯 Quiz App Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Jobs Status" >> $GITHUB_STEP_SUMMARY
+          echo "- Parser Build: ${{ needs.build-parser.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- DOCX Parsing: ${{ needs.parse-docx.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Quiz App Build: ${{ needs.build-quiz-app.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Tests: ${{ needs.test-and-validate.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "- Quiz JSON and built app available in artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🚀 Deployment" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ github.ref }}" == "refs/heads/master" ]; then
+            echo "- GitHub Pages deployment initiated" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- No deployment (not on master branch)" >> $GITHUB_STEP_SUMMARY
+          fi

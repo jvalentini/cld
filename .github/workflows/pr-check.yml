@@ -1,0 +1,220 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [ master, develop ]
+
+jobs:
+  lint-docker:
+    name: Lint Dockerfiles
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Lint parser Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: quiz-parser/Dockerfile
+          failure-threshold: warning
+      
+      - name: Lint quiz app Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: quiz-app/Dockerfile
+          failure-threshold: warning
+
+  validate-json:
+    name: Validate JSON Files
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Validate JSON syntax
+        run: |
+          echo "Checking JSON files..."
+          json_valid=true
+          
+          for file in quiz-parser/*.json quiz-app/*.json; do
+            if [ -f "$file" ]; then
+              echo "Validating $file..."
+              if jq empty "$file" 2>/dev/null; then
+                echo "✓ $file is valid"
+              else
+                echo "✗ $file is invalid"
+                json_valid=false
+              fi
+            fi
+          done
+          
+          if [ "$json_valid" = false ]; then
+            echo "JSON validation failed"
+            exit 1
+          fi
+          
+          echo "✓ All JSON files are valid"
+
+  check-structure:
+    name: Check Project Structure
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Verify required files
+        run: |
+          echo "Checking project structure..."
+          
+          required_files=(
+            "quiz-parser/Dockerfile"
+            "quiz-parser/parse_questions.py"
+            "quiz-parser/test_parse_questions.py"
+            "quiz-parser/Makefile"
+            "Makefile"
+            "quiz-app/Dockerfile"
+            "quiz-app/package.json"
+            "quiz-app/src/App.vue"
+            "quiz-app/src/main.js"
+          )
+          
+          missing_files=()
+          
+          for file in "${required_files[@]}"; do
+            if [ ! -f "$file" ]; then
+              missing_files+=("$file")
+              echo "✗ Missing: $file"
+            else
+              echo "✓ Found: $file"
+            fi
+          done
+          
+          if [ ${#missing_files[@]} -gt 0 ]; then
+            echo ""
+            echo "Missing required files:"
+            printf '%s\n' "${missing_files[@]}"
+            exit 1
+          fi
+          
+          echo "✓ All required files present"
+
+  test-parser:
+    name: Test Parser Script
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install docx2python click
+      
+      - name: Test parser imports
+        run: |
+          cd quiz-parser
+          python -c "import docx2python; print('✓ docx2python imported successfully')"
+          python -c "import click; print('✓ click imported successfully')"
+      
+      - name: Check parser script syntax
+        run: |
+          cd quiz-parser
+          python -m py_compile parse_questions.py
+          echo "✓ Parser script syntax is valid"
+      
+      - name: Run parser unit tests
+        run: |
+          cd quiz-parser
+          python test_parse_questions.py
+
+  build-test:
+    name: Test Docker Builds
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Build parser image
+        run: |
+          cd quiz-parser
+          docker build -t docx-parser-test .
+          echo "✓ Parser image built successfully"
+      
+      - name: Build quiz app image
+        run: |
+          cd quiz-app
+          docker build -t quiz-app-test .
+          echo "✓ Quiz app image built successfully"
+      
+      - name: Test parser image
+        run: |
+          docker run --rm docx-parser-test --help
+          echo "✓ Parser image runs successfully"
+
+  test-makefiles:
+    name: Test Makefile Targets
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Test root Makefile
+        run: |
+          make help
+          echo "✓ Root Makefile works"
+      
+      - name: Test parser Makefile
+        run: |
+          cd quiz-parser
+          make help
+          echo "✓ Parser Makefile works"
+      
+      - name: Test parser delegation
+        run: |
+          make parser-help
+          echo "✓ Parser delegation works"
+
+  pr-summary:
+    name: PR Summary
+    runs-on: ubuntu-latest
+    needs: [lint-docker, validate-json, check-structure, test-parser, build-test, test-makefiles]
+    if: always()
+    
+    steps:
+      - name: Generate PR summary
+        run: |
+          echo "## 🔍 PR Check Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Dockerfile Lint | ${{ needs.lint-docker.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| JSON Validation | ${{ needs.validate-json.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Project Structure | ${{ needs.check-structure.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Parser Tests | ${{ needs.test-parser.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Docker Builds | ${{ needs.build-test.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Makefile Tests | ${{ needs.test-makefiles.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.lint-docker.result }}" == "success" ] && \
+             [ "${{ needs.validate-json.result }}" == "success" ] && \
+             [ "${{ needs.check-structure.result }}" == "success" ] && \
+             [ "${{ needs.test-parser.result }}" == "success" ] && \
+             [ "${{ needs.build-test.result }}" == "success" ] && \
+             [ "${{ needs.test-makefiles.result }}" == "success" ]; then
+            echo "### ✅ All checks passed!" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ❌ Some checks failed" >> $GITHUB_STEP_SUMMARY
+          fi
