@@ -7,8 +7,17 @@ export default defineConfig({
     port: 3000,
     host: true
   },
-  base: './',        // ← Fix for Github Pages
-  build: {
-    outDir: 'dist'
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      exclude: [
+        'node_modules/',
+        'dist/',
+        '*.config.js'
+      ]
+    }
   }
 })
