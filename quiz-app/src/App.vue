@@ -1,16 +1,196 @@
 <script setup>
-import { supabase } from "./supabaseClient";
+import { supabase } from './supabaseClient'
 </script>
 <template>
   <div class="container">
-    <h1>📝 Quiz App</h1>
-    <p class="subtitle">Test your knowledge</p>
+    <div class="header">
+      <div class="header-content">
+        <h1>📝 Quiz App</h1>
+        <p class="subtitle">Test your knowledge</p>
+      </div>
+      <div class="nav-buttons">
+        <button 
+          v-if="currentView !== 'quiz' || quizStarted || quizCompleted"
+          class="btn-nav" 
+          @click="goToQuizPage"
+        >
+          🏠 Take Quiz
+        </button>
+        <button 
+          v-if="currentView !== 'stats' && !quizStarted"
+          class="btn-nav" 
+          @click="goToStatsPage"
+        >
+          📊 View Statistics
+        </button>
+      </div>
+    </div>
+
+    <!-- Breadcrumb -->
+    <div v-if="currentView !== 'quiz' || quizStarted || quizCompleted" class="breadcrumb">
+      <span @click="goToQuizPage" class="breadcrumb-link">Home</span>
+      <span v-if="currentView === 'stats'" class="breadcrumb-separator">›</span>
+      <span v-if="currentView === 'stats'" class="breadcrumb-current">Statistics</span>
+      <span v-if="currentView === 'quiz-stats'" class="breadcrumb-separator">›</span>
+      <span v-if="currentView === 'quiz-stats'" @click="goToStatsPage" class="breadcrumb-link">Statistics</span>
+      <span v-if="currentView === 'quiz-stats'" class="breadcrumb-separator">›</span>
+      <span v-if="currentView === 'quiz-stats'" class="breadcrumb-current">{{ selectedQuizStats?.name || 'Quiz Details' }}</span>
+    </div>
 
     <div v-if="error" class="error">{{ error }}</div>
     <div v-if="success" class="success">{{ success }}</div>
 
-    <!-- Quiz Selection -->
-    <div v-if="!quizStarted" class="quiz-selector">
+    <!-- Statistics Overview Page -->
+    <div v-if="currentView === 'stats' && !quizStarted">
+      <h2>📊 Quiz Statistics</h2>
+      
+      <div v-if="loadingStats" class="loading">Loading statistics...</div>
+      
+      <div v-else>
+        <!-- Overall Statistics -->
+        <div class="stats-overview">
+          <h3>Overall Statistics</h3>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-value">{{ allQuizStats.length }}</div>
+              <div class="stat-label">Total Quizzes</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">{{ totalSubmissions }}</div>
+              <div class="stat-label">Total Submissions</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">{{ overallAverageScore }}%</div>
+              <div class="stat-label">Average Score</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Individual Quiz List -->
+        <div class="quiz-stats-list">
+          <h3>Individual Quizzes</h3>
+          <div v-if="allQuizStats.length === 0" class="no-data">
+            No quiz statistics available yet. Take some quizzes to see statistics!
+          </div>
+          <div v-else class="quiz-cards">
+            <div 
+              v-for="quiz in allQuizStats" 
+              :key="quiz.quiz_id"
+              class="quiz-stat-card"
+              @click="viewQuizStats(quiz.quiz_id)"
+            >
+              <div class="quiz-stat-header">
+                <h4>{{ quiz.quiz_name }}</h4>
+                <span class="view-link">View Details →</span>
+              </div>
+              <div class="quiz-stat-body">
+                <div class="quiz-stat-item">
+                  <span class="label">Questions:</span>
+                  <span class="value">{{ quiz.total_questions || 0 }}</span>
+                </div>
+                <div class="quiz-stat-item">
+                  <span class="label">Submissions:</span>
+                  <span class="value">{{ quiz.total_submissions || 0 }}</span>
+                </div>
+                <div class="quiz-stat-item">
+                  <span class="label">Average Score:</span>
+                  <span class="value">{{ quiz.average_score || 0 }}%</span>
+                </div>
+                <div class="quiz-stat-item">
+                  <span class="label">Highest Score:</span>
+                  <span class="value">{{ quiz.highest_score || 0 }}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Individual Quiz Statistics Page -->
+    <div v-if="currentView === 'quiz-stats' && !quizStarted">
+      <div v-if="loadingStats" class="loading">Loading quiz statistics...</div>
+      
+      <div v-else-if="selectedQuizStats">
+        <h2>{{ selectedQuizStats.name }}</h2>
+        
+        <!-- Quiz Overview Stats -->
+        <div class="stats-overview">
+          <h3>Quiz Overview</h3>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-value">{{ selectedQuizStats.total_questions || 0 }}</div>
+              <div class="stat-label">Total Questions</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">{{ selectedQuizStats.total_submissions || 0 }}</div>
+              <div class="stat-label">Submissions</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">{{ selectedQuizStats.average_score || 0 }}%</div>
+              <div class="stat-label">Average Score</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">{{ selectedQuizStats.highest_score || 0 }}%</div>
+              <div class="stat-label">Highest Score</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">{{ selectedQuizStats.lowest_score || 0 }}%</div>
+              <div class="stat-label">Lowest Score</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Question Statistics -->
+        <div class="question-stats">
+          <h3>Question Statistics</h3>
+          <div v-if="questionStats.length === 0" class="no-data">
+            No question statistics available yet.
+          </div>
+          <div v-else class="question-stats-list">
+            <div 
+              v-for="(qStat, index) in questionStats" 
+              :key="qStat.question_id"
+              class="question-stat-card"
+            >
+              <div class="question-stat-header">
+                <span class="question-number">Question {{ index + 1 }}</span>
+                <span class="question-type-badge" :class="qStat.question_type === 'true_false' ? 'badge-true-false' : 'badge-multiple-choice'">
+                  {{ qStat.question_type === 'true_false' ? 'True/False' : 'Multiple Choice' }}
+                </span>
+              </div>
+              <div class="question-stat-text">{{ qStat.question_text }}</div>
+              <div class="question-stat-metrics">
+                <div class="metric">
+                  <span class="metric-label">Total Guesses:</span>
+                  <span class="metric-value">{{ qStat.total_guesses || 0 }}</span>
+                </div>
+                <div class="metric">
+                  <span class="metric-label">Correct Guesses:</span>
+                  <span class="metric-value">{{ qStat.correct_guesses || 0 }}</span>
+                </div>
+                <div class="metric">
+                  <span class="metric-label">Correct Rate:</span>
+                  <span class="metric-value" :class="getCorrectRateClass(qStat.correct_percentage)">
+                    {{ qStat.correct_percentage || 0 }}%
+                  </span>
+                </div>
+              </div>
+              <div class="progress-bar-container">
+                <div 
+                  class="progress-bar-fill" 
+                  :class="getCorrectRateClass(qStat.correct_percentage)"
+                  :style="{ width: (qStat.correct_percentage || 0) + '%' }"
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quiz Selection (existing) -->
+    <div v-if="currentView === 'quiz' && !quizStarted" class="quiz-selector">
       <h3>Select a Quiz from Database</h3>
       <div v-if="loadingQuizzes" class="loading">Loading quizzes...</div>
       <div v-else class="selector-group">
@@ -217,6 +397,14 @@ export default {
       uploadedQuizName: "",
       uploadedQuizData: null,
 
+      // Statistics view state
+      currentView: 'quiz', // 'quiz', 'stats', 'quiz-stats'
+      selectedStatsQuizId: null,
+      allQuizStats: [],
+      selectedQuizStats: null,
+      questionStats: [],
+      loadingStats: false,
+
       // UI state
       error: null,
       success: null,
@@ -261,6 +449,14 @@ export default {
         );
       }).length;
       return { total: tfQuestions.length, correct: correct };
+    },
+    totalSubmissions() {
+      return this.allQuizStats.reduce((sum, quiz) => sum + (quiz.total_submissions || 0), 0);
+    },
+    overallAverageScore() {
+      if (this.allQuizStats.length === 0) return 0;
+      const total = this.allQuizStats.reduce((sum, quiz) => sum + (quiz.average_score || 0), 0);
+      return Math.round(total / this.allQuizStats.length);
     },
   },
   methods: {
@@ -484,12 +680,12 @@ export default {
               })
               .select()
               .single();
-
+            
             if (error) {
-              console.error("Answer insert error:", error);
+              console.error('Answer insert error:', error);
               throw new Error(`Failed to insert answer: ${error.message}`);
             }
-
+            
             return { data, error };
           });
 
@@ -518,18 +714,20 @@ export default {
         this.questions = this.uploadedQuizData;
         this.questionIds = results.map((r) => r.question.id);
         this.answerIds = results.map((r) => r.answers.map((a) => a.id));
-
+        
         // Set correct answers from JSON if available
         this.correctAnswers = this.questions.map((q, idx) => {
           if (q.correct_answer !== undefined) {
             return q.correct_answer;
           }
           // Default to random for demo if not specified
-          return Math.floor(Math.random() * (q.type === "true_false" ? 2 : 4));
+          return Math.floor(
+            Math.random() * (q.type === "true_false" ? 2 : 4)
+          );
         });
 
         this.success = `Quiz "${this.uploadedQuizName}" saved to database successfully with ${results.length} questions!`;
-
+        
         // Start the quiz
         this.initializeQuiz();
 
@@ -540,20 +738,17 @@ export default {
         console.error("Error details:", {
           message: err.message,
           stack: err.stack,
-          name: err.name,
+          name: err.name
         });
-
+        
         // Check if it's an RLS error
-        if (err.message && err.message.includes("row-level security policy")) {
+        if (err.message && err.message.includes('row-level security policy')) {
           this.error = `Database security error: Row Level Security (RLS) is blocking the insert. 
           
           To fix this, you need to either:
           1. Disable RLS on the quizzes, questions, and answers tables, OR
           2. Add RLS policies that allow inserts (see the RLS_SETUP.md file for instructions)`;
-        } else if (
-          err.message &&
-          err.message.includes("Failed to insert answer")
-        ) {
+        } else if (err.message && err.message.includes('Failed to insert answer')) {
           this.error = `Failed to insert answers: ${err.message}
           
           This might be a database schema issue. Check that your 'answers' table has these columns:
@@ -625,25 +820,107 @@ export default {
       this.currentQuestionIndex = 0;
       this.quizCompleted = false;
       this.quizStarted = false;
-
+      
       // Reset quiz selection
       this.currentQuizId = null;
       this.selectedQuizId = "";
-
+      
       // Reset file upload state
       this.uploadedQuizName = "";
       this.uploadedQuizData = null;
-
+      
       // Clear messages
       this.error = null;
       this.success = null;
-
+      
       // Clear progress
       this.clearProgress();
-
-      // Reload available quizzes
+      
+      // Reload available quizzes to show any newly created ones
       this.loadAvailableQuizzes();
     },
+    
+    // Statistics methods
+    async goToStatsPage() {
+      this.currentView = 'stats';
+      this.error = null;
+      this.success = null;
+      await this.loadAllQuizStats();
+    },
+    
+    async goToQuizPage() {
+      this.currentView = 'quiz';
+      this.selectedStatsQuizId = null;
+      this.selectedQuizStats = null;
+      this.questionStats = [];
+      this.error = null;
+      this.success = null;
+    },
+    
+    async loadAllQuizStats() {
+      this.loadingStats = true;
+      this.error = null;
+      
+      try {
+        const { data, error } = await supabase
+          .from('quiz_statistics')
+          .select('*')
+          .order('quiz_name');
+        
+        if (error) throw error;
+        
+        this.allQuizStats = data || [];
+      } catch (err) {
+        console.error('Error loading quiz statistics:', err);
+        this.error = `Failed to load statistics: ${err.message}`;
+      } finally {
+        this.loadingStats = false;
+      }
+    },
+    
+    async viewQuizStats(quizId) {
+      this.currentView = 'quiz-stats';
+      this.selectedStatsQuizId = quizId;
+      this.loadingStats = true;
+      this.error = null;
+      
+      try {
+        // Load quiz overview stats
+        const { data: quizData, error: quizError } = await supabase
+          .from('quiz_statistics')
+          .select('*')
+          .eq('quiz_id', quizId)
+          .single();
+        
+        if (quizError) throw quizError;
+        
+        this.selectedQuizStats = quizData;
+        
+        // Load question statistics
+        const { data: questionData, error: questionError } = await supabase
+          .from('question_statistics')
+          .select('*')
+          .eq('quiz_id', quizId)
+          .order('question_id');
+        
+        if (questionError) throw questionError;
+        
+        this.questionStats = questionData || [];
+      } catch (err) {
+        console.error('Error loading quiz statistics:', err);
+        this.error = `Failed to load quiz statistics: ${err.message}`;
+        this.currentView = 'stats';
+      } finally {
+        this.loadingStats = false;
+      }
+    },
+    
+    getCorrectRateClass(percentage) {
+      if (percentage >= 80) return 'high';
+      if (percentage >= 50) return 'medium';
+      return 'low';
+    },
+    
     getAnswerLabel(index) {
       if (this.currentQuestion.type === "true_false") {
         return index === 0 ? "T" : "F";
@@ -708,7 +985,7 @@ export default {
   mounted() {
     // Load available quizzes from database
     this.loadAvailableQuizzes();
-
+    
     const savedProgress = this.loadProgress();
     if (savedProgress && savedProgress.questions.length > 0) {
       const resumeQuiz = confirm(
@@ -776,5 +1053,330 @@ export default {
 .btn-save:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Header and Navigation */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.header-content h1 {
+  margin: 0;
+}
+
+.header-content .subtitle {
+  margin: 5px 0 0 0;
+}
+
+.nav-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-nav {
+  padding: 10px 20px;
+  background: white;
+  border: 2px solid #007bff;
+  border-radius: 6px;
+  color: #007bff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-nav:hover {
+  background: #007bff;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 123, 255, 0.2);
+}
+
+/* Breadcrumb */
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  color: #6c757d;
+}
+
+.breadcrumb-link {
+  color: #007bff;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.breadcrumb-link:hover {
+  color: #0056b3;
+  text-decoration: underline;
+}
+
+.breadcrumb-separator {
+  color: #adb5bd;
+  user-select: none;
+}
+
+.breadcrumb-current {
+  color: #495057;
+  font-weight: 600;
+}
+
+/* Statistics Overview */
+.stats-overview {
+  margin-bottom: 40px;
+}
+
+.stats-overview h3 {
+  margin-bottom: 20px;
+  color: #495057;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.stat-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 30px;
+  border-radius: 12px;
+  text-align: center;
+  color: white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+}
+
+.stat-value {
+  font-size: 48px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.stat-label {
+  font-size: 14px;
+  opacity: 0.9;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Quiz Stats List */
+.quiz-stats-list {
+  margin-top: 40px;
+}
+
+.quiz-stats-list h3 {
+  margin-bottom: 20px;
+  color: #495057;
+}
+
+.quiz-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 20px;
+}
+
+.quiz-stat-card {
+  background: white;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.quiz-stat-card:hover {
+  border-color: #007bff;
+  box-shadow: 0 8px 16px rgba(0, 123, 255, 0.1);
+  transform: translateY(-4px);
+}
+
+.quiz-stat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.quiz-stat-header h4 {
+  margin: 0;
+  color: #495057;
+  font-size: 18px;
+}
+
+.view-link {
+  color: #007bff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.quiz-stat-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.quiz-stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.quiz-stat-item .label {
+  color: #6c757d;
+  font-size: 14px;
+}
+
+.quiz-stat-item .value {
+  color: #495057;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+/* Question Statistics */
+.question-stats {
+  margin-top: 40px;
+}
+
+.question-stats h3 {
+  margin-bottom: 20px;
+  color: #495057;
+}
+
+.question-stats-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.question-stat-card {
+  background: white;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.3s ease;
+}
+
+.question-stat-card:hover {
+  border-color: #007bff;
+  box-shadow: 0 4px 8px rgba(0, 123, 255, 0.1);
+}
+
+.question-stat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.question-number {
+  font-weight: 700;
+  color: #495057;
+  font-size: 14px;
+}
+
+.question-stat-text {
+  font-size: 16px;
+  color: #495057;
+  margin-bottom: 15px;
+  line-height: 1.5;
+}
+
+.question-stat-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.metric-label {
+  font-size: 12px;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.metric-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #495057;
+}
+
+.metric-value.high {
+  color: #28a745;
+}
+
+.metric-value.medium {
+  color: #ffc107;
+}
+
+.metric-value.low {
+  color: #dc3545;
+}
+
+/* Progress Bar for Question Stats */
+.progress-bar-container {
+  width: 100%;
+  height: 8px;
+  background: #e9ecef;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  transition: width 0.5s ease;
+}
+
+.progress-bar-fill.high {
+  background: linear-gradient(90deg, #28a745, #20c997);
+}
+
+.progress-bar-fill.medium {
+  background: linear-gradient(90deg, #ffc107, #ff9800);
+}
+
+.progress-bar-fill.low {
+  background: linear-gradient(90deg, #dc3545, #c82333);
+}
+
+/* No Data State */
+.no-data {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6c757d;
+  font-size: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 2px dashed #dee2e6;
+}
+
+/* Loading State */
+.loading {
+  text-align: center;
+  padding: 40px;
+  font-size: 18px;
+  color: #6c757d;
 }
 </style>
