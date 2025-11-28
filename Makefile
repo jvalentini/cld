@@ -6,6 +6,10 @@ QUIZ_DIR = quiz-app
 PARSER_IMAGE = docx-parser
 QUIZ_IMAGE = quiz-app
 
+# Default input/output files
+INPUT_DOCX ?= input.docx
+OUTPUT_JSON ?= output.json
+
 # Colors for output
 GREEN = \033[0;32m
 YELLOW = \033[0;33m
@@ -35,7 +39,7 @@ build-parser: ## Build the DOCX parser Docker image
 .PHONY: build-quiz
 build-quiz: ## Build the Vue quiz app Docker image
 	@echo "$(GREEN)Building quiz app image...$(NC)"
-	cd $(QUIZ_DIR) && docker build -t $(QUIZ_IMAGE) .
+	cd $(QUIZ_DIR) && docker build --build-arg CACHEBUST=$(git rev-parse HEAD) -t $(QUIZ_IMAGE) .
 	@echo "$(GREEN)✓ Quiz app built$(NC)"
 
 ##
