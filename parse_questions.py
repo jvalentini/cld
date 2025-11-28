@@ -2,32 +2,26 @@
 """
 DOCX Question Parser
 Parses a DOCX file to extract questions and their answer choices.
+Supports both multiple-choice questions and true/false assumption questions.
 """
 
 import sys
 import json
 import re
 from docx2python import docx2python
+from typing import List, Dict
 
 
-def parse_docx_questions(docx_path):
+def parse_multiple_choice_questions(lines: List[str]) -> List[Dict]:
     """
-    Parse a DOCX file and extract questions with their answer choices.
+    Parse multiple choice questions from lines of text.
 
     Args:
-        docx_path: Path to the DOCX file
+        lines: List of text lines from the document
 
     Returns:
-        List of dictionaries with 'question' and 'answers' keys
+        List of dictionaries with 'question', 'answers', and 'type' keys
     """
-    # Extract text from docx
-    with docx2python(docx_path) as docx_content:
-        # Get all paragraphs as a flat list
-        text = docx_content.text
-
-    # Split into lines and clean up
-    lines = [line.strip() for line in text.split("\n") if line.strip()]
-
     questions = []
     i = 0
 
@@ -72,29 +66,124 @@ def parse_docx_questions(docx_path):
                 answers.append(answer_text)
                 i += 1
 
-            questions.append({"question": question_text, "answers": answers})
+            questions.append(
+                {
+                    "question": question_text,
+                    "answers": answers,
+                    "type": "multiple_choice",
+                }
+            )
         else:
             i += 1
 
     return questions
 
 
+def parse_assumption_questions(lines: List[str]) -> List[Dict]:
+    """
+    Parse assumption-based true/false questions from lines of text.
+    Searches for sentences containing the word "Assume".
+
+    Args:
+        lines: List of text lines from the document
+
+    Returns:
+        List of dictionaries with 'question', 'answers', and 'type' keys
+    """
+    questions = []
+
+    # Join lines to handle multi-line sentences, then re-split by sentence
+    full_text = " ".join(lines)
+
+    # Split into sentences (simple approach - can be improved with nltk if needed)
+    # This regex splits on '.', '!', or '?' followed by space or end of string
+    sentences = re.split(r"(?<=[.!?])\s+", full_text)
+
+    for sentence in sentences:
+        sentence = sentence.strip()
+
+        # Check if sentence contains "assume" (case-insensitive)
+        if re.search(r"\bassume\b", sentence, re.IGNORECASE):
+            questions.append(
+                {
+                    "question": sentence,
+                    "answers": ["True", "False"],
+                    "type": "true_false",
+                }
+            )
+
+    return questions
+
+
+def parse_docx_questions(docx_path: str, question_type: str = "all") -> List[Dict]:
+    """
+    Parse a DOCX file and extract questions with their answer choices.
+
+    Args:
+        docx_path: Path to the DOCX file
+        question_type: Type of questions to parse ('multiple_choice', 'true_false', or 'all')
+
+    Returns:
+        List of dictionaries with 'question', 'answers', and 'type' keys
+    """
+    # Validate question_type
+    valid_types = ["multiple_choice", "true_false", "all"]
+    if question_type not in valid_types:
+        raise ValueError(
+            f"Invalid question_type '{question_type}'. Must be one of {valid_types}"
+        )
+
+    # Extract text from docx
+    with docx2python(docx_path) as docx_content:
+        # Get all paragraphs as a flat list
+        text = docx_content.text
+
+    # Split into lines and clean up
+    lines = [line.strip() for line in text.split("\n") if line.strip()]
+
+    questions = []
+
+    # Parse multiple choice questions if requested
+    if question_type in ["multiple_choice", "all"]:
+        mc_questions = parse_multiple_choice_questions(lines)
+        questions.extend(mc_questions)
+
+    # Parse assumption questions if requested
+    if question_type in ["true_false", "all"]:
+        tf_questions = parse_assumption_questions(lines)
+        questions.extend(tf_questions)
+
+    return questions
+
+
 def main():
-    if len(sys.argv) != 3:
-        print("Usage: python parse_questions.py <input.docx> <output.json>")
+    if len(sys.argv) < 3 or len(sys.argv) > 4:
+        print(
+            "Usage: python parse_questions.py <input.docx> <output.json> [question_type]"
+        )
+        print(
+            "  question_type: 'multiple_choice', 'true_false', or 'all' (default: 'all')"
+        )
         sys.exit(1)
 
     input_path = sys.argv[1]
     output_path = sys.argv[2]
+    question_type = sys.argv[3] if len(sys.argv) == 4 else "all"
 
     try:
-        questions = parse_docx_questions(input_path)
+        questions = parse_docx_questions(input_path, question_type)
 
         # Write to JSON file
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(questions, f, indent=2, ensure_ascii=False)
 
+        # Count question types
+        mc_count = sum(1 for q in questions if q["type"] == "multiple_choice")
+        tf_count = sum(1 for q in questions if q["type"] == "true_false")
+
         print(f"Successfully parsed {len(questions)} question(s)")
+        print(f"  - Multiple choice: {mc_count}")
+        print(f"  - True/False: {tf_count}")
         print(f"Output written to: {output_path}")
 
     except FileNotFoundError:
