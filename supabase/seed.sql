@@ -90,8 +90,8 @@ UPDATE questions SET correct_answer_id = 15 WHERE id = 5;
 -- Question 6: H2O (answer_id = 17)
 UPDATE questions SET correct_answer_id = 17 WHERE id = 6;
 
--- Question 7: True (answer_id = 23)
-UPDATE questions SET correct_answer_id = 23 WHERE id = 7;
+-- Question 7: True (answer_id = 21)
+UPDATE questions SET correct_answer_id = 21 WHERE id = 7;
 
 -- Insert sample submissions
 INSERT INTO submissions (quiz_id, correct_answers, total_questions) VALUES
