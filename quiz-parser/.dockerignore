@@ -1,0 +1,8 @@
+.git
+.github
+.gitignore
+*.md
+node_modules
+dist
+*.json
+*.docx
