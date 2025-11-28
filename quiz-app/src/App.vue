@@ -455,8 +455,20 @@ export default {
     },
     overallAverageScore() {
       if (this.allQuizStats.length === 0) return 0;
-      const total = this.allQuizStats.reduce((sum, quiz) => sum + (quiz.average_score || 0), 0);
-      return Math.round(total / this.allQuizStats.length);
+      
+      // Calculate weighted average based on number of submissions
+      let totalScore = 0;
+      let totalSubmissions = 0;
+      
+      this.allQuizStats.forEach(quiz => {
+        if (quiz.total_submissions && quiz.average_score) {
+          totalScore += quiz.average_score * quiz.total_submissions;
+          totalSubmissions += quiz.total_submissions;
+        }
+      });
+      
+      if (totalSubmissions === 0) return 0;
+      return Math.round(totalScore / totalSubmissions);
     },
   },
   methods: {
@@ -806,8 +818,54 @@ export default {
         this.saveProgress();
       }
     },
-    finishQuiz() {
+    async finishQuiz() {
       this.quizCompleted = true;
+      
+      // Save submission to database if we loaded from database
+      if (this.currentQuizId) {
+        try {
+          // Calculate correct answers
+          const correctCount = this.userAnswers.filter(
+            (answer, index) => answer === this.correctAnswers[index]
+          ).length;
+          const totalQuestions = this.questions.length;
+          
+          // Insert submission record
+          const { error: submissionError } = await supabase
+            .from('submissions')
+            .insert({
+              quiz_id: this.currentQuizId,
+              correct_answers: correctCount,
+              total_questions: totalQuestions
+            });
+          
+          if (submissionError) {
+            console.error('Error saving submission:', submissionError);
+            this.error = 'Quiz completed, but failed to save submission statistics.';
+          }
+          
+          // Increment guess counts for each answer
+          for (let i = 0; i < this.userAnswers.length; i++) {
+            const answerIndex = this.userAnswers[i];
+            if (answerIndex !== null && this.answerIds[i] && this.answerIds[i][answerIndex]) {
+              const answerId = this.answerIds[i][answerIndex];
+              
+              // Increment the guess count for this answer
+              const { error: guessError } = await supabase
+                .rpc('increment_answer_guess', { answer_id: answerId });
+              
+              if (guessError) {
+                console.error('Error incrementing guess for answer:', answerId, guessError);
+              }
+            }
+          }
+          
+        } catch (err) {
+          console.error('Error saving quiz results:', err);
+          this.error = 'Quiz completed, but failed to save statistics.';
+        }
+      }
+      
       this.clearProgress();
     },
     resetQuiz() {

@@ -185,17 +185,19 @@ SELECT
     qs.quiz_id,
     qs.question_text,
     qs.question_type,
-    SUM(a.guesses) AS total_guesses,
-    a_correct.guesses AS correct_guesses,
+    COALESCE(SUM(a.guesses), 0) AS total_guesses,
+    COALESCE(MAX(CASE WHEN a.id = qs.correct_answer_id THEN a.guesses ELSE 0 END), 0) AS correct_guesses,
     CASE 
-        WHEN SUM(a.guesses) > 0 
-        THEN ROUND((a_correct.guesses::DECIMAL / SUM(a.guesses)::DECIMAL * 100), 2)
+        WHEN COALESCE(SUM(a.guesses), 0) > 0 
+        THEN ROUND(
+            (COALESCE(MAX(CASE WHEN a.id = qs.correct_answer_id THEN a.guesses ELSE 0 END), 0)::DECIMAL 
+             / SUM(a.guesses)::DECIMAL * 100), 
+            2)
         ELSE 0 
     END AS correct_percentage
 FROM questions qs
 LEFT JOIN answers a ON qs.id = a.question_id
-LEFT JOIN answers a_correct ON qs.correct_answer_id = a_correct.id
-GROUP BY qs.id, qs.question_text, qs.question_type, qs.quiz_id, a_correct.guesses;
+GROUP BY qs.id, qs.question_text, qs.question_type, qs.quiz_id;
 
 -- Grant execute permission on functions
 GRANT EXECUTE ON FUNCTION increment_answer_guess(INTEGER) TO anon, authenticated;
