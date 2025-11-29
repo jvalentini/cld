@@ -46,49 +46,9 @@ build-quiz: ## Build the Vue quiz app Docker image
 ## Parser Commands (delegated to quiz-parser/Makefile)
 ##
 
-.PHONY: parse
-parse: ## Parse DOCX file (multiple choice only)
-	@$(MAKE) -C $(PARSER_DIR) parse INPUT_DOCX=$(INPUT_DOCX) OUTPUT_JSON=$(OUTPUT_JSON)
-
-.PHONY: parse-extended
-parse-extended: ## Parse DOCX file (all question types)
-	@$(MAKE) -C $(PARSER_DIR) parse-extended INPUT_DOCX=$(INPUT_DOCX) OUTPUT_JSON=$(OUTPUT_JSON)
-
-.PHONY: parse-tf
-parse-tf: ## Parse DOCX file (true/false only)
-	@$(MAKE) -C $(PARSER_DIR) parse-tf INPUT_DOCX=$(INPUT_DOCX) OUTPUT_JSON=$(OUTPUT_JSON)
-
-.PHONY: validate
-validate: ## Validate the output JSON file
-	@$(MAKE) -C $(PARSER_DIR) validate OUTPUT_JSON=$(OUTPUT_JSON)
-
-.PHONY: parser-help
-parser-help: ## Show parser-specific help
-	@$(MAKE) -C $(PARSER_DIR) help
-
-.PHONY: parser-test
-parser-test: ## Run parser unit tests
-	@$(MAKE) -C $(PARSER_DIR) test
-
-.PHONY: parser-test-verbose
-parser-test-verbose: ## Run parser tests with verbose output
-	@$(MAKE) -C $(PARSER_DIR) test-verbose
-
-.PHONY: parser-test-coverage
-parser-test-coverage: ## Run parser tests with coverage
-	@$(MAKE) -C $(PARSER_DIR) test-coverage
-
-.PHONY: parser-clean
-parser-clean: ## Clean parser generated files
-	@$(MAKE) -C $(PARSER_DIR) clean
-
-.PHONY: parser-sample
-parser-sample: ## Create sample quiz JSON
-	@$(MAKE) -C $(PARSER_DIR) sample
-
-.PHONY: parser-install
-parser-install: ## Install parser dependencies locally
-	@$(MAKE) -C $(PARSER_DIR) install
+.PHONY: parse parse-extended parse-tf validate parser-help parser-test parser-test-verbose parser-test-coverage parser-clean parser-sample parser-install
+parse parse-extended parse-tf validate parser-help parser-test parser-test-verbose parser-test-coverage parser-clean parser-sample parser-install:
+	@$(MAKE) -C $(PARSER_DIR) $(@:parser-%=%)
 
 ##
 ## Quiz App Commands
@@ -116,6 +76,37 @@ logs-quiz: ## Show quiz app logs
 
 .PHONY: quiz-clean
 quiz-clean: stop-quiz ## Stop and remove quiz app container
+
+# ──────────────────────────────────────────────────────────────
+# Quiz App Testing Targets
+# ──────────────────────────────────────────────────────────────
+
+.PHONY: quiz-test
+quiz-test: ## Run all Vitest tests (quiz-app/test/**/*.spec.js)
+	@echo "$(GREEN)Running Vue quiz app unit tests...$(NC)"
+	cd $(QUIZ_DIR) && npm run test
+	@echo "$(GREEN)All tests completed$(NC)"
+
+.PHONY: quiz-test-watch
+quiz-test-watch: ## Run tests in watch mode (great for development)
+	@echo "$(GREEN)Running tests in watch mode...$(NC)"
+	cd $(QUIZ_DIR) && npm run test -- --watch
+
+.PHONY: quiz-test-coverage
+quiz-test-coverage: ## Run tests with coverage report
+	@echo "$(GREEN)Running tests with coverage...$(NC)"
+	cd $(QUIZ_DIR) && npm run coverage
+
+.PHONY: quiz-test-ui
+quiz-test-ui: ## Open Vitest UI[](http://localhost:51204/__vitest__/)
+	@echo "$(GREEN)Opening Vitest UI...$(NC)"
+	cd $(QUIZ_DIR) && npm run test:ui
+
+# Quick aliases
+.PHONY: test-quiz test-quiz-watch test-quiz-cov
+test-quiz: quiz-test
+test-quiz-watch: quiz-test-watch
+test-quiz-cov: quiz-test-coverage
 
 ##
 ## Docker Compose Commands
@@ -191,10 +182,6 @@ status: ## Show status of containers and images
 .PHONY: info
 info: status ## Show project information
 
-# Allow passing .docx files without error
-%.docx:
-	@:
-
-# Allow passing .json files without error
-%.json:
+# Allow passing .docx/.json files without error
+%.docx %.json:
 	@:
