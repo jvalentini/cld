@@ -16,31 +16,36 @@ YELLOW = \033[0;33m
 NC = \033[0m # No Color
 
 .PHONY: help
-help: ## Show this help message
-	@echo "$(GREEN)Root Makefile - Available targets:$(NC)"
+help: ## Show this help
+	@echo "$(GREEN)Root Makefile – Available targets$(NC)"
 	@echo ""
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(YELLOW)%-25s$(NC) %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
+		| awk 'BEGIN {FS = ":.*?## "}; {printf "  $(YELLOW)%-25s$(NC) %s\n", $$1, $$2}'
 	@echo ""
-	@echo "$(GREEN)For parser-specific commands:$(NC)"
-	@echo "  $(YELLOW)make parser-help$(NC)            Show all parser commands"
-	@echo "  $(YELLOW)cd $(PARSER_DIR) && make help$(NC)   Show parser help directly"
+	@echo "$(GREEN)Delegated commands:$(NC)"
+	@echo "  Parser → make parser-*"
+	@echo "  Quiz App → make quiz-* or make test-quiz etc."
 
 ##
 ## Build Commands
 ##
 
-.PHONY: build-all
-build-all: build-parser build-quiz ## Build all Docker images
-
-.PHONY: build-parser
-build-parser: ## Build the DOCX parser Docker image
+.PHONY: build-all build-parser build-quiz
+build-all: build-parser build-quiz
+build-parser:
 	@$(MAKE) -C $(PARSER_DIR) build
+build-quiz: quiz-build
 
-.PHONY: build-quiz
-build-quiz: ## Build the Vue quiz app Docker image
-	@echo "$(GREEN)Building quiz app image...$(NC)"
-	cd $(QUIZ_DIR) && docker build --build-arg CACHEBUST=$(git rev-parse HEAD) -t $(QUIZ_IMAGE) .
-	@echo "$(GREEN)✓ Quiz app built$(NC)"
+.PHONY: run-quiz stop-quiz restart-quiz logs-quiz quiz-clean
+run-quiz:      quiz-run
+stop-quiz:     quiz-stop
+restart-quiz:  quiz-restart
+logs-quiz:     quiz-logs
+
+.PHONY: up down rebuild
+up:      quiz-up
+down:    quiz-down
+rebuild: quiz-rebuild
 
 ##
 ## Parser Commands (delegated to quiz-parser/Makefile)
@@ -50,85 +55,27 @@ build-quiz: ## Build the Vue quiz app Docker image
 parse parse-extended parse-tf validate parser-help parser-test parser-test-verbose parser-test-coverage parser-clean parser-sample parser-install:
 	@$(MAKE) -C $(PARSER_DIR) $(@:parser-%=%)
 
-##
-## Quiz App Commands
-##
-
-.PHONY: run-quiz
-run-quiz: ## Run the quiz app (http://localhost:8080)
-	@echo "$(GREEN)Starting quiz app at http://localhost:8080$(NC)"
-	docker run -d -p 8080:80 --name $(QUIZ_IMAGE) $(QUIZ_IMAGE)
-	@echo "$(GREEN)✓ Quiz app running$(NC)"
-
-.PHONY: stop-quiz
-stop-quiz: ## Stop the quiz app
-	@echo "$(GREEN)Stopping quiz app...$(NC)"
-	-docker stop $(QUIZ_IMAGE) 2>/dev/null || true
-	-docker rm $(QUIZ_IMAGE) 2>/dev/null || true
-	@echo "$(GREEN)✓ Quiz app stopped$(NC)"
-
-.PHONY: restart-quiz
-restart-quiz: stop-quiz run-quiz ## Restart the quiz app
-
-.PHONY: logs-quiz
-logs-quiz: ## Show quiz app logs
-	docker logs -f $(QUIZ_IMAGE)
-
-.PHONY: quiz-clean
-quiz-clean: stop-quiz ## Stop and remove quiz app container
-
 # ──────────────────────────────────────────────────────────────
-# Quiz App Testing Targets
+# Quiz App delegation – now uses quiz-app/Makefile
 # ──────────────────────────────────────────────────────────────
+.PHONY: quiz-install quiz-dev quiz-build quiz-run quiz-stop quiz-logs quiz-restart \
+        quiz-clean quiz-test quiz-test-watch quiz-test-ui quiz-coverage \
+        quiz-up quiz-down quiz-rebuild quiz-compose-logs
 
-.PHONY: quiz-test
-quiz-test: ## Run all Vitest tests (quiz-app/test/**/*.spec.js)
-	@echo "$(GREEN)Running Vue quiz app unit tests...$(NC)"
-	cd $(QUIZ_DIR) && npm run test
-	@echo "$(GREEN)All tests completed$(NC)"
+# Core runtime
+quiz-install quiz-dev quiz-build quiz-run quiz-stop quiz-logs quiz-restart quiz-clean \
+quiz-up quiz-down quiz-rebuild quiz-compose-logs:
+	@$(MAKE) -C $(QUIZ_DIR) $(@:quiz-%=%)
 
-.PHONY: quiz-test-watch
-quiz-test-watch: ## Run tests in watch mode (great for development)
-	@echo "$(GREEN)Running tests in watch mode...$(NC)"
-	cd $(QUIZ_DIR) && npm run test -- --watch
+# Testing targets (with nice short aliases)
+quiz-test quiz-test-watch quiz-test-ui quiz-coverage:
+	@$(MAKE) -C $(QUIZ_DIR) $(patsubst quiz-test%,test%,$(patsubst quiz-%,%,$@))
 
-.PHONY: quiz-test-coverage
-quiz-test-coverage: ## Run tests with coverage report
-	@echo "$(GREEN)Running tests with coverage...$(NC)"
-	cd $(QUIZ_DIR) && npm run coverage
-
-.PHONY: quiz-test-ui
-quiz-test-ui: ## Open Vitest UI[](http://localhost:51204/__vitest__/)
-	@echo "$(GREEN)Opening Vitest UI...$(NC)"
-	cd $(QUIZ_DIR) && npm run test:ui
-
-# Quick aliases
-.PHONY: test-quiz test-quiz-watch test-quiz-cov
-test-quiz: quiz-test
-test-quiz-watch: quiz-test-watch
-test-quiz-cov: quiz-test-coverage
-
-##
-## Docker Compose Commands
-##
-
-.PHONY: up
-up: ## Start all services with docker-compose
-	@echo "$(GREEN)Starting services...$(NC)"
-	cd $(QUIZ_DIR) && docker-compose up -d
-	@echo "$(GREEN)✓ Quiz app running at http://localhost:8080$(NC)"
-
-.PHONY: down
-down: ## Stop all services with docker-compose
-	@echo "$(GREEN)Stopping services...$(NC)"
-	cd $(QUIZ_DIR) && docker-compose down
-	@echo "$(GREEN)✓ Services stopped$(NC)"
-
-.PHONY: rebuild
-rebuild: ## Rebuild and restart all services
-	@echo "$(GREEN)Rebuilding services...$(NC)"
-	cd $(QUIZ_DIR) && docker-compose up --build -d
-	@echo "$(GREEN)✓ Services rebuilt and running at http://localhost:8080$(NC)"
+# Short aliases at root level
+test-quiz: quiz-test               ## Run quiz tests
+test-quiz-watch: quiz-test-watch   ## Watch mode
+test-quiz-ui: quiz-test-ui         ## Vitest UI
+test-quiz-cov: quiz-coverage       ## Coverage
 
 ##
 ## Workflow Commands
