@@ -185,6 +185,8 @@ SELECT
     qs.quiz_id,
     qs.question_text,
     qs.question_type,
+    a_correct.answer_label AS correct_answer_label,
+    a_correct.answer_text AS correct_answer_text,
     COALESCE(SUM(a.guesses), 0) AS total_guesses,
     COALESCE(MAX(CASE WHEN a.id = qs.correct_answer_id THEN a.guesses ELSE 0 END), 0) AS correct_guesses,
     CASE 
@@ -197,7 +199,23 @@ SELECT
     END AS correct_percentage
 FROM questions qs
 LEFT JOIN answers a ON qs.id = a.question_id
-GROUP BY qs.id, qs.question_text, qs.question_type, qs.quiz_id;
+LEFT JOIN answers a_correct ON qs.correct_answer_id = a_correct.id
+GROUP BY qs.id, qs.question_text, qs.question_type, qs.quiz_id, a_correct.answer_label, a_correct.answer_text;
+
+-- Create a view for answer statistics (detailed breakdown per question)
+CREATE OR REPLACE VIEW answer_statistics AS
+SELECT 
+    a.id AS answer_id,
+    a.question_id,
+    a.answer_label,
+    a.answer_text,
+    a.guesses,
+    CASE WHEN qs.correct_answer_id = a.id THEN true ELSE false END AS is_correct,
+    qs.question_text,
+    qs.quiz_id
+FROM answers a
+JOIN questions qs ON a.question_id = qs.id
+ORDER BY a.question_id, a.answer_label;
 
 -- Grant execute permission on functions
 GRANT EXECUTE ON FUNCTION increment_answer_guess(INTEGER) TO anon, authenticated;
@@ -205,6 +223,7 @@ GRANT EXECUTE ON FUNCTION increment_answer_guess(INTEGER) TO anon, authenticated
 -- Grant select on views
 GRANT SELECT ON quiz_statistics TO anon, authenticated;
 GRANT SELECT ON question_statistics TO anon, authenticated;
+GRANT SELECT ON answer_statistics TO anon, authenticated;
 
 -- Comments
 COMMENT ON TABLE quizzes IS 'Stores quiz metadata';

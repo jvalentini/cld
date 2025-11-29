@@ -17,7 +17,7 @@ import { supabase } from './supabaseClient'
           🏠 Take Quiz
         </button>
         <button 
-          v-if="currentView !== 'stats' && !quizStarted"
+          v-if="currentView !== 'stats'"
           class="btn-nav" 
           @click="goToStatsPage"
         >
@@ -29,12 +29,36 @@ import { supabase } from './supabaseClient'
     <!-- Breadcrumb -->
     <div v-if="currentView !== 'quiz' || quizStarted || quizCompleted" class="breadcrumb">
       <span @click="goToQuizPage" class="breadcrumb-link">Home</span>
-      <span v-if="currentView === 'stats'" class="breadcrumb-separator">›</span>
-      <span v-if="currentView === 'stats'" class="breadcrumb-current">Statistics</span>
-      <span v-if="currentView === 'quiz-stats'" class="breadcrumb-separator">›</span>
-      <span v-if="currentView === 'quiz-stats'" @click="goToStatsPage" class="breadcrumb-link">Statistics</span>
-      <span v-if="currentView === 'quiz-stats'" class="breadcrumb-separator">›</span>
-      <span v-if="currentView === 'quiz-stats'" class="breadcrumb-current">{{ selectedQuizStats?.name || 'Quiz Details' }}</span>
+      
+      <!-- When taking or completed a quiz -->
+      <template v-if="(quizStarted || quizCompleted) && currentView === 'quiz'">
+        <span class="breadcrumb-separator">›</span>
+        <span class="breadcrumb-current">{{ currentQuizName || 'Quiz' }}</span>
+      </template>
+      
+      <!-- When on stats overview -->
+      <template v-if="currentView === 'stats'">
+        <span class="breadcrumb-separator">›</span>
+        <span class="breadcrumb-current">Statistics</span>
+      </template>
+      
+      <!-- When viewing individual quiz stats -->
+      <template v-if="currentView === 'quiz-stats'">
+        <span class="breadcrumb-separator">›</span>
+        <span @click="goToStatsPage" class="breadcrumb-link">Statistics</span>
+        <span class="breadcrumb-separator">›</span>
+        <span class="breadcrumb-current">{{ selectedQuizStats?.quiz_name || 'Quiz Details' }}</span>
+      </template>
+      
+      <!-- When viewing question detail -->
+      <template v-if="currentView === 'question-detail'">
+        <span class="breadcrumb-separator">›</span>
+        <span @click="goToStatsPage" class="breadcrumb-link">Statistics</span>
+        <span class="breadcrumb-separator">›</span>
+        <span @click="goBackToQuizStats" class="breadcrumb-link">{{ selectedQuizStats?.quiz_name || 'Quiz Details' }}</span>
+        <span class="breadcrumb-separator">›</span>
+        <span class="breadcrumb-current">Question Details</span>
+      </template>
     </div>
 
     <div v-if="error" class="error">{{ error }}</div>
@@ -112,7 +136,7 @@ import { supabase } from './supabaseClient'
       <div v-if="loadingStats" class="loading">Loading quiz statistics...</div>
       
       <div v-else-if="selectedQuizStats">
-        <h2>{{ selectedQuizStats.name }}</h2>
+        <h2>{{ selectedQuizStats.quiz_name }}</h2>
         
         <!-- Quiz Overview Stats -->
         <div class="stats-overview">
@@ -151,7 +175,8 @@ import { supabase } from './supabaseClient'
             <div 
               v-for="(qStat, index) in questionStats" 
               :key="qStat.question_id"
-              class="question-stat-card"
+              class="question-stat-card clickable"
+              @click="viewQuestionDetail(qStat.question_id)"
             >
               <div class="question-stat-header">
                 <span class="question-number">Question {{ index + 1 }}</span>
@@ -160,6 +185,10 @@ import { supabase } from './supabaseClient'
                 </span>
               </div>
               <div class="question-stat-text">{{ qStat.question_text }}</div>
+              <div class="question-stat-correct-answer">
+                <span class="correct-label">Correct Answer:</span>
+                <span class="correct-answer">{{ qStat.correct_answer_label }}. {{ qStat.correct_answer_text }}</span>
+              </div>
               <div class="question-stat-metrics">
                 <div class="metric">
                   <span class="metric-label">Total Guesses:</span>
@@ -182,6 +211,76 @@ import { supabase } from './supabaseClient'
                   :class="getCorrectRateClass(qStat.correct_percentage)"
                   :style="{ width: (qStat.correct_percentage || 0) + '%' }"
                 ></div>
+              </div>
+              <div class="view-detail-hint">Click to view answer breakdown →</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Question Detail View -->
+    <div v-if="currentView === 'question-detail'">
+      <div v-if="loadingStats" class="loading">Loading answer statistics...</div>
+      
+      <div v-else-if="selectedQuestionStats">
+        <h2>{{ selectedQuestionStats.question_text }}</h2>
+        
+        <!-- Question Overview Stats -->
+        <div class="stats-overview">
+          <h3>Overall Performance</h3>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-value">{{ selectedQuestionStats.total_guesses || 0 }}</div>
+              <div class="stat-label">Total Attempts</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value success-text">{{ selectedQuestionStats.correct_guesses || 0 }}</div>
+              <div class="stat-label">Correct Guesses</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value error-text">{{ (selectedQuestionStats.total_guesses - selectedQuestionStats.correct_guesses) || 0 }}</div>
+              <div class="stat-label">Incorrect Guesses</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" :class="getCorrectRateClass(selectedQuestionStats.correct_percentage)">
+                {{ selectedQuestionStats.correct_percentage || 0 }}%
+              </div>
+              <div class="stat-label">Success Rate</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Answer Breakdown -->
+        <div class="answer-breakdown">
+          <h3>Answer Breakdown</h3>
+          <div class="answer-stats-list">
+            <div 
+              v-for="answer in answerStats" 
+              :key="answer.answer_id"
+              class="answer-stat-card"
+              :class="{ 'correct-answer': answer.is_correct }"
+            >
+              <div class="answer-header">
+                <div class="answer-label-section">
+                  <span class="answer-label-badge">{{ answer.answer_label }}</span>
+                  <span v-if="answer.is_correct" class="correct-badge">✓ Correct Answer</span>
+                </div>
+                <div class="answer-guesses">
+                  <span class="guess-count">{{ answer.guesses || 0 }}</span>
+                  <span class="guess-label">guesses</span>
+                </div>
+              </div>
+              <div class="answer-text">{{ answer.answer_text }}</div>
+              <div class="answer-stats-bar">
+                <div class="stats-bar-container">
+                  <div 
+                    class="stats-bar-fill"
+                    :class="answer.is_correct ? 'correct-bar' : 'incorrect-bar'"
+                    :style="{ width: getAnswerPercentage(answer.guesses) + '%' }"
+                  ></div>
+                </div>
+                <span class="percentage-label">{{ getAnswerPercentage(answer.guesses) }}%</span>
               </div>
             </div>
           </div>
@@ -359,7 +458,8 @@ import { supabase } from './supabaseClient'
             >
             <span v-else>
               ✗ (Correct:
-              {{ getAnswerLabelForResult(question, qIndex, true) }})</span
+              {{ getAnswerLabelForResult(question, qIndex, true) }}.
+              {{ question.answers[correctAnswers[qIndex]] }})</span
             >
           </div>
         </div>
@@ -384,6 +484,7 @@ export default {
 
       // Quiz state
       currentQuizId: null,
+      currentQuizName: "",
       questions: [],
       questionIds: [], // Store DB question IDs
       answerIds: [], // Store DB answer IDs for each question
@@ -398,11 +499,14 @@ export default {
       uploadedQuizData: null,
 
       // Statistics view state
-      currentView: 'quiz', // 'quiz', 'stats', 'quiz-stats'
+      currentView: 'quiz', // 'quiz', 'stats', 'quiz-stats', 'question-detail'
       selectedStatsQuizId: null,
       allQuizStats: [],
       selectedQuizStats: null,
       questionStats: [],
+      selectedQuestionId: null,
+      selectedQuestionStats: null,
+      answerStats: [],
       loadingStats: false,
 
       // UI state
@@ -501,6 +605,16 @@ export default {
       this.error = null;
 
       try {
+        // Load quiz name first
+        const { data: quiz, error: quizError } = await supabase
+          .from("quizzes")
+          .select("name")
+          .eq("id", this.selectedQuizId)
+          .single();
+
+        if (quizError) throw quizError;
+        this.currentQuizName = quiz.name;
+
         // Load questions
         const { data: questions, error: qError } = await supabase
           .from("questions")
@@ -724,6 +838,7 @@ export default {
 
         // Build local quiz data for starting the quiz
         this.questions = this.uploadedQuizData;
+        this.currentQuizName = this.uploadedQuizName;
         this.questionIds = results.map((r) => r.question.id);
         this.answerIds = results.map((r) => r.answers.map((a) => a.id));
         
@@ -789,15 +904,6 @@ export default {
         this.userAnswers = new Array(this.questions.length).fill(null);
         this.currentQuestionIndex = 0;
       }
-
-      // For demo purposes, randomly assign correct answers
-      this.correctAnswers = this.questions.map((q) => {
-        if (q.type === "true_false") {
-          return Math.floor(Math.random() * 2); // 0 or 1
-        } else {
-          return Math.floor(Math.random() * 4); // 0-3
-        }
-      });
 
       this.quizStarted = true;
       this.error = null;
@@ -881,6 +987,7 @@ export default {
       
       // Reset quiz selection
       this.currentQuizId = null;
+      this.currentQuizName = "";
       this.selectedQuizId = "";
       
       // Reset file upload state
@@ -900,6 +1007,11 @@ export default {
     
     // Statistics methods
     async goToStatsPage() {
+      // If currently in a quiz (started or completed), reset it first
+      if (this.quizStarted || this.quizCompleted) {
+        this.resetQuiz();
+      }
+      
       this.currentView = 'stats';
       this.error = null;
       this.success = null;
@@ -907,6 +1019,11 @@ export default {
     },
     
     async goToQuizPage() {
+      // If currently in a quiz (started or completed), reset it first
+      if (this.quizStarted || this.quizCompleted) {
+        this.resetQuiz();
+      }
+      
       this.currentView = 'quiz';
       this.selectedStatsQuizId = null;
       this.selectedQuizStats = null;
@@ -971,6 +1088,57 @@ export default {
       } finally {
         this.loadingStats = false;
       }
+    },
+    
+    async viewQuestionDetail(questionId) {
+      this.currentView = 'question-detail';
+      this.selectedQuestionId = questionId;
+      this.loadingStats = true;
+      this.error = null;
+      
+      try {
+        // Load question statistics
+        const { data: questionData, error: questionError } = await supabase
+          .from('question_statistics')
+          .select('*')
+          .eq('question_id', questionId)
+          .single();
+        
+        if (questionError) throw questionError;
+        
+        this.selectedQuestionStats = questionData;
+        
+        // Load answer statistics
+        const { data: answerData, error: answerError } = await supabase
+          .from('answer_statistics')
+          .select('*')
+          .eq('question_id', questionId)
+          .order('answer_label');
+        
+        if (answerError) throw answerError;
+        
+        this.answerStats = answerData || [];
+      } catch (err) {
+        console.error('Error loading question details:', err);
+        this.error = `Failed to load question details: ${err.message}`;
+        this.currentView = 'quiz-stats';
+      } finally {
+        this.loadingStats = false;
+      }
+    },
+    
+    goBackToQuizStats() {
+      this.currentView = 'quiz-stats';
+      this.selectedQuestionId = null;
+      this.selectedQuestionStats = null;
+      this.answerStats = [];
+    },
+    
+    getAnswerPercentage(guesses) {
+      if (!this.selectedQuestionStats || !this.selectedQuestionStats.total_guesses) {
+        return 0;
+      }
+      return Math.round((guesses / this.selectedQuestionStats.total_guesses) * 100);
     },
     
     getCorrectRateClass(percentage) {
@@ -1436,5 +1604,184 @@ export default {
   padding: 40px;
   font-size: 18px;
   color: #6c757d;
+}
+
+/* Clickable Question Cards */
+.question-stat-card.clickable {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.question-stat-card.clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  border-color: #007bff;
+}
+
+.question-stat-correct-answer {
+  margin: 12px 0;
+  padding: 8px 12px;
+  background: #e7f3ff;
+  border-left: 3px solid #007bff;
+  border-radius: 4px;
+}
+
+.correct-label {
+  font-weight: 600;
+  color: #495057;
+  margin-right: 8px;
+}
+
+.correct-answer {
+  color: #007bff;
+  font-weight: 500;
+}
+
+.view-detail-hint {
+  text-align: center;
+  margin-top: 12px;
+  color: #6c757d;
+  font-size: 14px;
+  font-style: italic;
+}
+
+.question-stat-card.clickable:hover .view-detail-hint {
+  color: #007bff;
+  font-weight: 500;
+}
+
+/* Answer Breakdown Styles */
+.answer-breakdown {
+  margin-top: 30px;
+}
+
+.answer-stats-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.answer-stat-card {
+  background: white;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  padding: 20px;
+  transition: all 0.2s ease;
+}
+
+.answer-stat-card.correct-answer {
+  border-color: #28a745;
+  background: linear-gradient(to right, #f0fff4 0%, white 100%);
+}
+
+.answer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.answer-label-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.answer-label-badge {
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  line-height: 32px;
+  text-align: center;
+  background: #007bff;
+  color: white;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.answer-stat-card.correct-answer .answer-label-badge {
+  background: #28a745;
+}
+
+.correct-badge {
+  padding: 4px 12px;
+  background: #28a745;
+  color: white;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.answer-guesses {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.guess-count {
+  font-size: 28px;
+  font-weight: 700;
+  color: #343a40;
+  line-height: 1;
+}
+
+.guess-label {
+  font-size: 12px;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.answer-text {
+  font-size: 16px;
+  color: #495057;
+  margin-bottom: 15px;
+  padding-left: 42px;
+}
+
+.answer-stats-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stats-bar-container {
+  flex: 1;
+  height: 24px;
+  background: #e9ecef;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.stats-bar-fill {
+  height: 100%;
+  transition: width 0.5s ease;
+  border-radius: 12px;
+}
+
+.stats-bar-fill.correct-bar {
+  background: linear-gradient(90deg, #28a745, #20c997);
+}
+
+.stats-bar-fill.incorrect-bar {
+  background: linear-gradient(90deg, #6c757d, #5a6268);
+}
+
+.percentage-label {
+  min-width: 45px;
+  text-align: right;
+  font-weight: 600;
+  color: #495057;
+  font-size: 14px;
+}
+
+/* Success and Error Text Colors */
+.success-text {
+  color: #28a745 !important;
+}
+
+.error-text {
+  color: #dc3545 !important;
 }
 </style>
