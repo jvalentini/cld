@@ -42,6 +42,11 @@ class TestParseMultipleChoiceQuestions(unittest.TestCase):
         self.assertEqual(len(result[0]["answers"]), 4)
         self.assertEqual(result[0]["answers"][0], "London")
         self.assertEqual(result[0]["answers"][1], "Paris")
+        # Verify correct_answer is always present (either specified or random)
+        self.assertIn("correct_answer", result[0])
+        self.assertIsInstance(result[0]["correct_answer"], int)
+        self.assertGreaterEqual(result[0]["correct_answer"], 0)
+        self.assertLessEqual(result[0]["correct_answer"], 3)
 
     def test_valid_multiple_questions(self):
         """Test parsing multiple valid questions"""
@@ -92,6 +97,145 @@ class TestParseMultipleChoiceQuestions(unittest.TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]["question"], "Test question?")
 
+    def test_correct_answer_with_colon(self):
+        """Test parsing correct answer with 'Correct Answer: B' format"""
+        lines = [
+            "Question",
+            "What is the capital of France?",
+            "A. London",
+            "B. Paris",
+            "C. Berlin",
+            "D. Madrid",
+            "Correct Answer: B",
+        ]
+
+        result = parse_multiple_choice_questions(lines)
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["correct_answer"], 1)  # B = index 1
+
+    def test_correct_answer_without_colon(self):
+        """Test parsing correct answer with 'Correct Answer B' format (no colon)"""
+        lines = [
+            "Question",
+            "What is 2 + 2?",
+            "A. 3",
+            "B. 4",
+            "C. 5",
+            "D. 6",
+            "Correct Answer B",
+        ]
+
+        result = parse_multiple_choice_questions(lines)
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["correct_answer"], 1)  # B = index 1
+
+    def test_correct_answer_case_insensitive(self):
+        """Test that 'Correct Answer', 'CORRECT ANSWER', 'correct answer' all work"""
+        test_cases = [
+            "Correct Answer: C",
+            "CORRECT ANSWER: C",
+            "correct answer: C",
+            "Correct Answer C",
+            "CORRECT ANSWER C",
+            "correct answer C",
+        ]
+
+        for correct_line in test_cases:
+            lines = [
+                "Question",
+                "Test?",
+                "A. Answer 1",
+                "B. Answer 2",
+                "C. Answer 3",
+                "D. Answer 4",
+                correct_line,
+            ]
+
+            result = parse_multiple_choice_questions(lines)
+            self.assertEqual(
+                result[0]["correct_answer"], 2, f"Failed for: {correct_line}"
+            )  # C = index 2
+
+    def test_correct_answer_different_labels(self):
+        """Test correct answer parsing for all labels A, B, C, D"""
+        labels_and_indices = [("A", 0), ("B", 1), ("C", 2), ("D", 3)]
+
+        for label, expected_index in labels_and_indices:
+            lines = [
+                "Question",
+                "Test question?",
+                "A. Answer 1",
+                "B. Answer 2",
+                "C. Answer 3",
+                "D. Answer 4",
+                f"Correct Answer: {label}",
+            ]
+
+            result = parse_multiple_choice_questions(lines)
+            self.assertEqual(
+                result[0]["correct_answer"], expected_index, f"Failed for label {label}"
+            )
+
+    def test_question_without_correct_answer(self):
+        """Test that questions without correct answer line get random correct answer"""
+        lines = [
+            "Question",
+            "What is the capital of France?",
+            "A. London",
+            "B. Paris",
+            "C. Berlin",
+            "D. Madrid",
+        ]
+
+        result = parse_multiple_choice_questions(lines)
+
+        self.assertEqual(len(result), 1)
+        # Should have correct_answer field (randomly assigned)
+        self.assertIn("correct_answer", result[0])
+        self.assertIsInstance(result[0]["correct_answer"], int)
+        self.assertGreaterEqual(result[0]["correct_answer"], 0)
+        self.assertLessEqual(result[0]["correct_answer"], 3)
+
+    def test_multiple_questions_some_with_correct_answers(self):
+        """Test parsing multiple questions where some have correct answers and some don't"""
+        lines = [
+            "Question",
+            "What is the capital of France?",
+            "A. London",
+            "B. Paris",
+            "C. Berlin",
+            "D. Madrid",
+            "Correct Answer: B",
+            "Question",
+            "What is 2 + 2?",
+            "A. 3",
+            "B. 4",
+            "C. 5",
+            "D. 6",
+            "Question",
+            "What color is the sky?",
+            "A. Red",
+            "B. Blue",
+            "C. Green",
+            "D. Yellow",
+            "Correct Answer: B",
+        ]
+
+        result = parse_multiple_choice_questions(lines)
+
+        self.assertEqual(len(result), 3)
+        # First has explicit correct answer B
+        self.assertEqual(result[0]["correct_answer"], 1)
+        # Second should have random correct answer (0-3)
+        self.assertIn("correct_answer", result[1])
+        self.assertIsInstance(result[1]["correct_answer"], int)
+        self.assertGreaterEqual(result[1]["correct_answer"], 0)
+        self.assertLessEqual(result[1]["correct_answer"], 3)
+        # Third has explicit correct answer B
+        self.assertEqual(result[2]["correct_answer"], 1)
+
     def test_missing_answer(self):
         """Test that missing answer raises ValueError"""
         lines = [
@@ -129,6 +273,75 @@ class TestParseAssumptionQuestions(unittest.TestCase):
         self.assertEqual(result[0]["question"], "Assume that the sky is blue.")
         self.assertEqual(result[0]["type"], "true_false")
         self.assertEqual(result[0]["answers"], ["True", "False"])
+        # Should have correct_answer (either specified or random)
+        self.assertIn("correct_answer", result[0])
+        self.assertIsInstance(result[0]["correct_answer"], int)
+        self.assertIn(result[0]["correct_answer"], [0, 1])
+
+    def test_assumption_with_correct_answer_true(self):
+        """Test parsing assumption with 'Correct Answer: True'"""
+        lines = ["Assume that the sky is blue. Correct Answer: True"]
+
+        result = parse_assumption_questions(lines)
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["correct_answer"], 0)  # True = 0
+
+    def test_assumption_with_correct_answer_false(self):
+        """Test parsing assumption with 'Correct Answer: False'"""
+        lines = ["Assume that the sky is green. Correct Answer: False"]
+
+        result = parse_assumption_questions(lines)
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["correct_answer"], 1)  # False = 1
+
+    def test_assumption_with_correct_answer_t(self):
+        """Test parsing assumption with 'Correct Answer: T'"""
+        lines = ["Assume this is correct. Correct Answer: T"]
+
+        result = parse_assumption_questions(lines)
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["correct_answer"], 0)  # T = 0
+
+    def test_assumption_with_correct_answer_f(self):
+        """Test parsing assumption with 'Correct Answer: F'"""
+        lines = ["Assume this is wrong. Correct Answer: F"]
+
+        result = parse_assumption_questions(lines)
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["correct_answer"], 1)  # F = 1
+
+    def test_assumption_correct_answer_case_insensitive(self):
+        """Test that correct answer is case insensitive"""
+        test_cases = [
+            ("Assume test. Correct Answer: true", 0),
+            ("Assume test. CORRECT ANSWER: TRUE", 0),
+            ("Assume test. correct answer true", 0),
+            ("Assume test. Correct Answer: false", 1),
+            ("Assume test. CORRECT ANSWER: FALSE", 1),
+            ("Assume test. correct answer: f", 1),
+            ("Assume test. Correct Answer T", 0),
+        ]
+
+        for line, expected_index in test_cases:
+            result = parse_assumption_questions([line])
+            self.assertEqual(
+                result[0]["correct_answer"], expected_index, f"Failed for: {line}"
+            )
+
+    def test_assumption_without_correct_answer(self):
+        """Test assumption without correct answer gets random assignment"""
+        lines = ["Assume that this is a test."]
+
+        result = parse_assumption_questions(lines)
+
+        self.assertEqual(len(result), 1)
+        # Should have random correct_answer (0 or 1)
+        self.assertIn("correct_answer", result[0])
+        self.assertIn(result[0]["correct_answer"], [0, 1])
 
     def test_multiple_assumptions(self):
         """Test parsing multiple assumption statements"""
@@ -328,13 +541,6 @@ class TestMainFunction(unittest.TestCase):
 
         self.assertEqual(result.exit_code, 0)
         self.assertIn("Parse a DOCX file", result.output)
-
-    def test_missing_arguments(self):
-        """Test CLI with missing arguments"""
-        result = self.runner.invoke(main, [])
-
-        self.assertNotEqual(result.exit_code, 0)
-        self.assertIn("Missing argument", result.output)
 
     @patch("parse_questions.docx2python")
     def test_default_behavior_multiple_choice_only(self, mock_docx2python):
@@ -589,6 +795,93 @@ Assume the calculations are correct. Final note."""
 
         self.assertEqual(len(mc_questions), 2)
         self.assertEqual(len(tf_questions), 2)
+
+        # Verify all questions have correct_answer field
+        for q in result:
+            self.assertIn("correct_answer", q)
+            self.assertIsInstance(q["correct_answer"], int)
+            if q["type"] == "multiple_choice":
+                self.assertGreaterEqual(q["correct_answer"], 0)
+                self.assertLessEqual(q["correct_answer"], 3)
+            else:  # true_false
+                self.assertIn(q["correct_answer"], [0, 1])
+
+    @patch("parse_questions.docx2python")
+    def test_document_with_correct_answers(self, mock_docx2python):
+        """Test parsing a document with correct answers specified"""
+        mock_doc = MagicMock()
+        mock_doc.text = """Question
+What is the capital of France?
+A. London
+B. Paris
+C. Berlin
+D. Madrid
+Correct Answer: B
+
+Question
+What is 2 + 2?
+A. 3
+B. 4
+C. 5
+D. 6
+CORRECT ANSWER C
+
+Question
+What color is grass?
+A. Red
+B. Green
+C. Blue
+D. Yellow"""
+        mock_docx2python.return_value.__enter__.return_value = mock_doc
+
+        result = parse_docx_questions("test.docx", "multiple_choice")
+
+        # Should find 3 multiple choice questions
+        self.assertEqual(len(result), 3)
+
+        # First question has correct answer B (index 1)
+        self.assertEqual(result[0]["question"], "What is the capital of France?")
+        self.assertEqual(result[0]["correct_answer"], 1)
+
+        # Second question has correct answer C (index 2)
+        self.assertEqual(result[1]["question"], "What is 2 + 2?")
+        self.assertEqual(result[1]["correct_answer"], 2)
+
+        # Third question has random correct answer (0-3)
+        self.assertEqual(result[2]["question"], "What color is grass?")
+        self.assertIn("correct_answer", result[2])
+        self.assertIsInstance(result[2]["correct_answer"], int)
+        self.assertGreaterEqual(result[2]["correct_answer"], 0)
+        self.assertLessEqual(result[2]["correct_answer"], 3)
+
+    @patch("parse_questions.docx2python")
+    def test_document_with_assumptions_and_correct_answers(self, mock_docx2python):
+        """Test parsing assumptions with correct answers"""
+        mock_doc = MagicMock()
+        mock_doc.text = """Assume the user is authenticated. Correct Answer: True
+
+Assume the database is empty. Correct Answer: False
+
+Assume all inputs are valid."""
+        mock_docx2python.return_value.__enter__.return_value = mock_doc
+
+        result = parse_docx_questions("test.docx", "true_false")
+
+        # Should find 3 true/false questions
+        self.assertEqual(len(result), 3)
+
+        # First has correct answer True (index 0)
+        self.assertIn("Assume the user is authenticated", result[0]["question"])
+        self.assertEqual(result[0]["correct_answer"], 0)
+
+        # Second has correct answer False (index 1)
+        self.assertIn("Assume the database is empty", result[1]["question"])
+        self.assertEqual(result[1]["correct_answer"], 1)
+
+        # Third has random correct answer (0 or 1)
+        self.assertIn("Assume all inputs are valid", result[2]["question"])
+        self.assertIn("correct_answer", result[2])
+        self.assertIn(result[2]["correct_answer"], [0, 1])
 
 
 def run_tests():

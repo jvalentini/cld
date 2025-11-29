@@ -142,12 +142,14 @@ sample: ## Create a sample DOCX file for testing
 	@echo '  {' >> sample-quiz.json
 	@echo '    "question": "What is the capital of France?",' >> sample-quiz.json
 	@echo '    "answers": ["London", "Paris", "Berlin", "Madrid"],' >> sample-quiz.json
-	@echo '    "type": "multiple_choice"' >> sample-quiz.json
+	@echo '    "type": "multiple_choice",' >> sample-quiz.json
+	@echo '    "correct_answer": 1,' >> sample-quiz.json
 	@echo '  },' >> sample-quiz.json
 	@echo '  {' >> sample-quiz.json
 	@echo '    "question": "Assume that the user is authenticated.",' >> sample-quiz.json
 	@echo '    "answers": ["True", "False"],' >> sample-quiz.json
-	@echo '    "type": "true_false"' >> sample-quiz.json
+	@echo '    "type": "true_false",' >> sample-quiz.json
+	@echo '    "correct_answer": 0,' >> sample-quiz.json
 	@echo '  }' >> sample-quiz.json
 	@echo ']' >> sample-quiz.json
 	@echo "$(GREEN)✓ Created sample-quiz.json$(NC)"
