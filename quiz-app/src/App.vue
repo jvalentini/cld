@@ -1200,7 +1200,9 @@ export default {
           return JSON.parse(saved);
         } catch (e) {
           return null;
-        }
+      },
+      clearProgress() {
+          localStorage.removeItem('quizProgress');
       }
       return null;
     },
