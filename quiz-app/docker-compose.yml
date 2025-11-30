@@ -2,8 +2,14 @@ version: '3.8'
 
 services:
   quiz-app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Pass environment variables from .env file to build
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
+        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
     ports:
       - "8080:80"
-    container_name: quiz-app
     restart: unless-stopped
+    container_name: quiz-app

@@ -133,6 +133,16 @@ make run-quiz      # Start the quiz app at http://localhost:8080
 make stop-quiz     # Stop the running quiz app
 make restart-quiz  # Restart the quiz app
 make logs-quiz     # View quiz app logs
+
+make test-quiz          # → runs npm run test in quiz-app
+make test-quiz-watch    # → watch mode
+make test-quiz-ui       # → Vitest UI
+make test-quiz-cov      # → coverage
+
+make quiz-dev           # → npm run dev
+make quiz-build         # → docker build
+make quiz-run           # → docker run
+make quiz-test          # → same as test-quiz
 ```
 
 ### Docker Compose Commands
@@ -146,7 +156,7 @@ make rebuild       # Rebuild and restart all services
 ### Workflow Commands
 
 ```bash
-make all           # Build all Docker images
+make build-all     # Build all Docker images
 make workflow      # Parse and validate (quick workflow)
 make full-workflow # Complete workflow: build, parse, validate, and run
 ```

@@ -7,7 +7,8 @@
       "None of the above",
       "It depends"
     ],
-    "type": "multiple_choice"
+    "type": "multiple_choice",
+    "correct_answer": 0
   },
   {
     "question": "Did you use AI tools in creating this solution?",
@@ -17,7 +18,8 @@
       "A little",
       "What are AI tools"
     ],
-    "type": "multiple_choice"
+    "type": "multiple_choice",
+    "correct_answer": 0
   },
   {
     "question": "If so, which ones",
@@ -27,38 +29,7 @@
       "Gemini",
       "Other"
     ],
-    "type": "multiple_choice"
-  },
-  {
-    "question": "You can assume that a paragraph that starts with the word “Question” marks the beginning of a question.",
-    "answers": [
-      "True",
-      "False"
-    ],
-    "type": "true_false"
-  },
-  {
-    "question": "Assume that each question will have 4 answer choices labelled A,B,C,D.",
-    "answers": [
-      "True",
-      "False"
-    ],
-    "type": "true_false"
-  },
-  {
-    "question": "--\tAssume this is to be used at a live event where 1000 participants were rotating through 50 stations over the course of a few hours – each station has a facilitator with an iPad and uses this app to ask the participants the questions and record their answers.",
-    "answers": [
-      "True",
-      "False"
-    ],
-    "type": "true_false"
-  },
-  {
-    "question": "Assume we want to collect aggregated statistics at the end.",
-    "answers": [
-      "True",
-      "False"
-    ],
-    "type": "true_false"
+    "type": "multiple_choice",
+    "correct_answer": 1
   }
 ]

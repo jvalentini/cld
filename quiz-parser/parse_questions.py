@@ -20,8 +20,10 @@ def parse_multiple_choice_questions(lines: List[str]) -> List[Dict]:
         lines: List of text lines from the document
 
     Returns:
-        List of dictionaries with 'question', 'answers', and 'type' keys
+        List of dictionaries with 'question', 'answers', 'type', and 'correct_answer' keys
     """
+    import random
+
     questions = []
     i = 0
 
@@ -66,13 +68,35 @@ def parse_multiple_choice_questions(lines: List[str]) -> List[Dict]:
                 answers.append(answer_text)
                 i += 1
 
-            questions.append(
-                {
-                    "question": question_text,
-                    "answers": answers,
-                    "type": "multiple_choice",
-                }
-            )
+            # Build the question dict
+            question_dict = {
+                "question": question_text,
+                "answers": answers,
+                "type": "multiple_choice",
+            }
+
+            # Check if there's a "Correct Answer" line next
+            correct_answer_found = False
+            if i < len(lines):
+                next_line = lines[i].strip()
+                # Match "Correct Answer:" or "Correct Answer" (case insensitive)
+                correct_answer_match = re.match(
+                    r"^correct\s*answer:?\s*([A-D])", next_line, re.IGNORECASE
+                )
+
+                if correct_answer_match:
+                    correct_label = correct_answer_match.group(1).upper()
+                    # Convert A, B, C, D to 0, 1, 2, 3
+                    correct_index = ord(correct_label) - ord("A")
+                    question_dict["correct_answer"] = correct_index
+                    correct_answer_found = True
+                    i += 1  # Move past the "Correct Answer" line
+
+            # If no correct answer specified, pick random
+            if not correct_answer_found:
+                question_dict["correct_answer"] = random.randint(0, 3)
+
+            questions.append(question_dict)
         else:
             i += 1
 
@@ -88,8 +112,10 @@ def parse_assumption_questions(lines: List[str]) -> List[Dict]:
         lines: List of text lines from the document
 
     Returns:
-        List of dictionaries with 'question', 'answers', and 'type' keys
+        List of dictionaries with 'question', 'answers', 'type', and 'correct_answer' keys
     """
+    import random
+
     questions = []
 
     # Join lines to handle multi-line sentences, then re-split by sentence
@@ -99,18 +125,99 @@ def parse_assumption_questions(lines: List[str]) -> List[Dict]:
     # This regex splits on '.', '!', or '?' followed by space or end of string
     sentences = re.split(r"(?<=[.!?])\s+", full_text)
 
-    for sentence in sentences:
-        sentence = sentence.strip()
+    i = 0
+    while i < len(sentences):
+        sentence = sentences[i].strip()
 
         # Check if sentence contains "assume" (case-insensitive)
         if re.search(r"\bassume\b", sentence, re.IGNORECASE):
-            questions.append(
-                {
-                    "question": sentence,
+            # Check if sentence has pattern "Correct Answer: X  Assume ..."
+            # This happens when sentences get joined - the "Correct Answer" belongs to previous question
+            leading_correct = re.match(
+                r"^correct\s*answer:?\s*(true|false|t|f)\s+(.+)",
+                sentence,
+                re.IGNORECASE,
+            )
+
+            if leading_correct:
+                # Apply the correct answer to the PREVIOUS question
+                if len(questions) > 0:
+                    answer_text = leading_correct.group(1).upper()
+                    if answer_text in ["TRUE", "T"]:
+                        questions[-1]["correct_answer"] = 0
+                    else:  # FALSE or F
+                        questions[-1]["correct_answer"] = 1
+
+                # Extract just the assume part for the current question
+                sentence = leading_correct.group(2).strip()
+
+            # Now check if correct answer is at the END of this sentence
+            # Pattern: "Assume text. Correct Answer: True"
+            correct_at_end = re.search(
+                r"^(.+?)\.\s*correct\s*answer:?\s*(true|false|t|f)\s*$",
+                sentence,
+                re.IGNORECASE,
+            )
+
+            if correct_at_end:
+                # Extract the question part (before "Correct Answer")
+                question_text = correct_at_end.group(1).strip() + "."
+                answer_text = correct_at_end.group(2).upper()
+
+                question_dict = {
+                    "question": question_text,
                     "answers": ["True", "False"],
                     "type": "true_false",
                 }
-            )
+
+                # Convert to index: True/T = 0, False/F = 1
+                if answer_text in ["TRUE", "T"]:
+                    question_dict["correct_answer"] = 0
+                else:  # FALSE or F
+                    question_dict["correct_answer"] = 1
+
+                questions.append(question_dict)
+                i += 1
+                continue
+
+            # Use whole sentence as question
+            question_dict = {
+                "question": sentence,
+                "answers": ["True", "False"],
+                "type": "true_false",
+            }
+
+            # Check if there's a "Correct Answer" in the next sentence
+            correct_answer_found = False
+            if i + 1 < len(sentences):
+                next_sentence = sentences[i + 1].strip()
+                # Match "Correct Answer: True/False" or "Correct Answer: T/F" (case insensitive)
+                correct_answer_match = re.match(
+                    r"^correct\s*answer:?\s*(true|false|t|f)",
+                    next_sentence,
+                    re.IGNORECASE,
+                )
+
+                if correct_answer_match:
+                    answer_text = correct_answer_match.group(1).upper()
+                    # Convert to index: True/T = 0, False/F = 1
+                    if answer_text in ["TRUE", "T"]:
+                        question_dict["correct_answer"] = 0
+                    else:  # FALSE or F
+                        question_dict["correct_answer"] = 1
+                    correct_answer_found = True
+                    # Only skip the next sentence if it doesn't contain "assume"
+                    # (because it might be "Correct Answer: X  Assume next question")
+                    if not re.search(r"\bassume\b", next_sentence, re.IGNORECASE):
+                        i += 1  # Skip the "Correct Answer" sentence
+
+            # If no correct answer specified, pick random
+            if not correct_answer_found:
+                question_dict["correct_answer"] = random.randint(0, 1)
+
+            questions.append(question_dict)
+
+        i += 1
 
     return questions
 
@@ -157,14 +264,16 @@ def parse_docx_questions(docx_path: str, question_type: str = "all") -> List[Dic
 
 
 @click.command()
-@click.argument("input_docx", type=click.Path(exists=True))
-@click.argument("output_json", type=click.Path())
+@click.argument("input_docx", default="input.docx", type=click.Path(exists=True))
+@click.argument("output_json", default="output.json", type=click.Path())
 @click.option(
+    "-e",
     "--extended",
     is_flag=True,
     help="Parse both multiple-choice and true/false questions. By default, only multiple-choice questions are parsed.",
 )
 @click.option(
+    "-t",
     "--type",
     "question_type",
     type=click.Choice(["multiple_choice", "true_false", "all"], case_sensitive=False),

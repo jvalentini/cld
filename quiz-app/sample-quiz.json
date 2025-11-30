@@ -1,47 +1,73 @@
 [
   {
+    "question": "What color is the sky on a clear day?",
+    "answers": [
+      "Blue",
+      "Purple",
+      "Green",
+      "Orange"
+    ],
+    "type": "multiple_choice",
+    "correct_answer": 0
+  },
+  {
     "question": "What is the capital of France?",
     "answers": [
       "London",
-      "Paris",
       "Berlin",
+      "Paris",
       "Madrid"
-    ]
+    ],
+    "type": "multiple_choice",
+    "correct_answer": 2
   },
   {
-    "question": "What is 2 + 2?",
-    "answers": [
-      "3",
-      "4",
-      "5",
-      "6"
-    ]
-  },
-  {
-    "question": "Which planet is closest to the Sun?",
+    "question": "Which planet is known as the Red Planet?",
     "answers": [
       "Venus",
-      "Earth",
-      "Mercury",
-      "Mars"
-    ]
+      "Mars",
+      "Jupiter",
+      "Saturn"
+    ],
+    "type": "multiple_choice",
+    "correct_answer": 1
   },
   {
-    "question": "What is the largest ocean on Earth?",
+    "question": "The Earth orbits around the Sun.",
     "answers": [
-      "Atlantic Ocean",
-      "Indian Ocean",
-      "Arctic Ocean",
-      "Pacific Ocean"
-    ]
+      "True",
+      "False"
+    ],
+    "type": "true_false",
+    "correct_answer": 0
   },
   {
-    "question": "Who painted the Mona Lisa?",
+    "question": "Water boils at 100 degrees Celsius at sea level.",
     "answers": [
-      "Vincent van Gogh",
-      "Leonardo da Vinci",
-      "Pablo Picasso",
-      "Michelangelo"
-    ]
+      "True",
+      "False"
+    ],
+    "type": "true_false",
+    "correct_answer": 0
+  },
+  {
+    "question": "The Pacific Ocean is the smallest ocean.",
+    "answers": [
+      "True",
+      "False"
+    ],
+    "type": "true_false",
+    "correct_answer": 1
+  },
+  {
+    "question": "What is 5 + 7?",
+    "answers": [
+      "10",
+      "11",
+      "12",
+      "13"
+    ],
+    "type": "multiple_choice",
+    "correct_answer": 2
   }
 ]
