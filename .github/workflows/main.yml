@@ -240,7 +240,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: quiz-app/package-lock.json
+          cache-dependency-path: ${{ github.workspace }}/quiz-app/package-lock.json
 
       - name: Install frontend dependencies
         if: steps.download.outputs.downloaded != 'true' || hashFiles('dist/**') == ''
