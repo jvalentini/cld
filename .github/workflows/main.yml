@@ -12,6 +12,12 @@ env:
   QUIZ_IMAGE: quiz-app
   REGISTRY: ghcr.io
 
+permissions:
+  contents: read
+  packages: write
+  pages: write
+  id-token: write
+
 jobs:
   build-parser:
     name: Build DOCX Parser
@@ -215,31 +221,48 @@ jobs:
     name: Deploy to GitHub Pages
     runs-on: ubuntu-latest
     needs: build-quiz-app
-    if: github.ref == 'refs/heads/master'
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/add-supabase-vars-to-pages' || github.event_name == 'workflow_dispatch'
     
+    # This is the magic: uses a real GitHub Environment
     environment:
-      name: github-pages
+      name: github-pages          # ← create this in Settings > Environments
       url: ${{ steps.deployment.outputs.page_url }}
-    
+
     steps:
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ─── Always build fresh with real secrets from environment ───
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          name: quiz-app-dist
-          path: dist
-      
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: ${{ github.workspace }}/quiz-app/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: quiz-app
+        run: npm ci
+
+      - name: Build Vite app with Supabase credentials
+        working-directory: quiz-app
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          echo "Building with VITE_SUPABASE_URL=$VITE_SUPABASE_URL"
+          npm run build
+          echo "Build complete → dist/ ready for GitHub Pages"
+
+      # ─── Deploy the dist folder ───
       - name: Setup Pages
         uses: actions/configure-pages@v4
-      
-      - name: Upload to GitHub Pages
+
+      - name: Upload artifact to GitHub Pages
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
-      
+          path: quiz-app/dist
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
