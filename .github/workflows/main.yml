@@ -215,7 +215,7 @@ jobs:
     name: Deploy to GitHub Pages
     runs-on: ubuntu-latest
     needs: build-quiz-app
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/add-supabase-vars-to-pages'
     
     # This is the magic: uses a real GitHub Environment
     environment:
