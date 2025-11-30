@@ -185,11 +185,17 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            VITE_SUPABASE_URL=${{ vars.VITE_SUPABASE_URL }}
+            VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }}
       
       - name: Build quiz app for deployment
         run: |
           cd quiz-app
-          docker build -t ${{ env.QUIZ_IMAGE }} .
+          docker build \
+            --build-arg VITE_SUPABASE_URL="${{ vars.VITE_SUPABASE_URL }}" \
+            --build-arg VITE_SUPABASE_ANON_KEY="${{ secrets.VITE_SUPABASE_ANON_KEY }}" \
+            -t ${{ env.QUIZ_IMAGE }} .
       
       - name: Export built files
         run: |
