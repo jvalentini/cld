@@ -12,6 +12,12 @@ env:
   QUIZ_IMAGE: quiz-app
   REGISTRY: ghcr.io
 
+permissions:
+  contents: read
+  packages: write
+  pages: write
+  id-token: write
+
 jobs:
   build-parser:
     name: Build DOCX Parser
