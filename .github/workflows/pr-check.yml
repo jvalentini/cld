@@ -155,7 +155,10 @@ jobs:
       - name: Build quiz app image
         run: |
           cd quiz-app
-          docker build -t quiz-app-test .
+          docker build \
+            --build-arg VITE_SUPABASE_URL="${{ vars.VITE_SUPABASE_URL }}" \
+            --build-arg VITE_SUPABASE_ANON_KEY="${{ secrets.VITE_SUPABASE_ANON_KEY }}" \
+            -t quiz-app-test .
           echo "✓ Quiz app image built successfully"
       
       - name: Test parser image

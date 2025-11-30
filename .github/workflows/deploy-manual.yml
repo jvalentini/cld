@@ -96,7 +96,10 @@ jobs:
       - name: Build quiz app
         run: |
           cd quiz-app
-          docker build -t ${{ env.QUIZ_IMAGE }} .
+          docker build \
+            --build-arg VITE_SUPABASE_URL="${{ vars.VITE_SUPABASE_URL }}" \
+            --build-arg VITE_SUPABASE_ANON_KEY="${{ secrets.VITE_SUPABASE_ANON_KEY }}" \
+            -t ${{ env.QUIZ_IMAGE }} .
       
       - name: Extract built files
         run: |
