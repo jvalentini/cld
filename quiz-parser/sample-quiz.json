@@ -3,12 +3,12 @@
     "question": "What is the capital of France?",
     "answers": ["London", "Paris", "Berlin", "Madrid"],
     "type": "multiple_choice",
-    "correct_answer": 1,
+    "correct_answer": 1
   },
   {
     "question": "Assume that the user is authenticated.",
     "answers": ["True", "False"],
     "type": "true_false",
-    "correct_answer": 0,
+    "correct_answer": 0
   }
 ]
