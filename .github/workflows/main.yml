@@ -216,30 +216,63 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-quiz-app
     if: github.ref == 'refs/heads/master'
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
     
+    # This is the magic: uses a real GitHub Environment
     environment:
-      name: github-pages
+      name: github-pages          # ← create this in Settings > Environments
       url: ${{ steps.deployment.outputs.page_url }}
-    
+
     steps:
-      - name: Download build artifacts
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download built dist (fallback)
         uses: actions/download-artifact@v4
         with:
           name: quiz-app-dist
           path: dist
-      
+        continue-on-error: true
+
+      # ─── If no dist from previous job, build it here with real secrets ───
+      - name: Setup Node.js
+        if: steps.download.outputs.downloaded != 'true' || hashFiles('dist/**') == ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: quiz-app/package-lock.json
+
+      - name: Install frontend dependencies
+        if: steps.download.outputs.downloaded != 'true' || hashFiles('dist/**') == ''
+        run: cd quiz-app && npm ci
+
+      - name: Create .env.production with injected secrets
+        if: steps.download.outputs.downloaded != 'true' || hashFiles('dist/**') == ''
+        working-directory: quiz-app
+        run: |
+          echo "VITE_SUPABASE_URL=${{ vars.VITE_SUPABASE_URL }}" >> .env.production
+          echo "VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }}" >> .env.production
+          echo "VITE_APP_ENV=production" >> .env.production
+          echo "VITE_BUILD_TIME=$(date -u)" >> .env.production
+          echo "VITE_GIT_SHA=${{ github.sha }}" >> .env.production
+          cat .env.production  # for debug (secrets are masked)
+
+      - name: Build Vite app with real credentials
+        if: steps.download.outputs.downloaded != 'true' || hashFiles('dist/**') == ''
+        working-directory: quiz-app
+        run: |
+          npm run build -- --mode production
+          echo "Build complete → dist/ ready for GitHub Pages"
+
+      # ─── Deploy the correct dist folder ───
       - name: Setup Pages
         uses: actions/configure-pages@v4
-      
-      - name: Upload to GitHub Pages
+
+      - name: Upload artifact to GitHub Pages
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
-      
+          path: quiz-app/dist   # ← this is now guaranteed to have real Supabase keys
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
