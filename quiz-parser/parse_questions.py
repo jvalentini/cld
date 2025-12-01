@@ -3,110 +3,619 @@
 DOCX Question Parser
 Parses a DOCX file to extract questions and their answer choices.
 Supports both multiple-choice questions and true/false assumption questions.
+
+This module uses the Strategy pattern for extensibility - new question types
+can be added by creating a new parser class that extends QuestionParser
+and registering it with the QuestionParserRegistry.
 """
 
 import json
+import random
 import re
 import click
+from abc import ABC, abstractmethod
 from docx2python import docx2python
-from typing import List, Dict
+from typing import List, Dict, Type, Optional
+
+
+# =============================================================================
+# Utility Functions - Common operations extracted to avoid duplication
+# =============================================================================
+
+
+def get_random_correct_answer(max_index: int) -> int:
+    """
+    Get a random correct answer index.
+
+    Args:
+        max_index: Maximum index value (inclusive)
+
+    Returns:
+        Random integer from 0 to max_index
+    """
+    return random.randint(0, max_index)
+
+
+def convert_letter_to_index(letter: str) -> int:
+    """
+    Convert answer letter (A, B, C, D) to zero-based index.
+
+    Args:
+        letter: A letter from A-D (case insensitive)
+
+    Returns:
+        Index 0-3 corresponding to the letter
+    """
+    return ord(letter.upper()) - ord("A")
+
+
+def convert_true_false_to_index(value: str) -> int:
+    """
+    Convert True/False string to index.
+
+    Args:
+        value: 'True', 'T', 'False', or 'F' (case insensitive)
+
+    Returns:
+        0 for True/T, 1 for False/F
+    """
+    return 0 if value.upper() in ["TRUE", "T"] else 1
+
+
+def create_question_dict(
+    question: str, answers: List[str], q_type: str, correct_answer: int
+) -> Dict:
+    """
+    Create a standardized question dictionary.
+
+    Args:
+        question: The question text
+        answers: List of answer choices
+        q_type: Question type string
+        correct_answer: Index of the correct answer
+
+    Returns:
+        Dictionary with question, answers, type, and correct_answer keys
+    """
+    return {
+        "question": question,
+        "answers": answers,
+        "type": q_type,
+        "correct_answer": correct_answer,
+    }
+
+
+def parse_correct_answer_line(
+    line: str, pattern: str, converter: callable
+) -> Optional[int]:
+    """
+    Parse a "Correct Answer: X" line and return the index.
+
+    Args:
+        line: The line to parse
+        pattern: Regex pattern to match (should have one capture group for the answer)
+        converter: Function to convert matched value to index
+
+    Returns:
+        Index of correct answer if found, None otherwise
+    """
+    match = re.match(pattern, line.strip(), re.IGNORECASE)
+    if match:
+        return converter(match.group(1))
+    return None
+
+
+# =============================================================================
+# Question Parser Base Class - Strategy Pattern
+# =============================================================================
+
+
+class QuestionParser(ABC):
+    """
+    Abstract base class for question parsers.
+
+    To add a new question type:
+    1. Create a class that extends QuestionParser
+    2. Implement the abstract properties and methods
+    3. Register the parser using @QuestionParserRegistry.register decorator
+
+    Example:
+        @QuestionParserRegistry.register
+        class MyNewParser(QuestionParser):
+            @property
+            def question_type(self) -> str:
+                return "my_new_type"
+
+            @property
+            def type_key(self) -> str:
+                return "my_new_type"
+
+            def parse(self, lines: List[str]) -> List[Dict]:
+                # Implementation here
+                pass
+    """
+
+    @property
+    @abstractmethod
+    def question_type(self) -> str:
+        """
+        Return the question type string used in output dictionaries.
+
+        This is the value stored in the 'type' field of question dicts.
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def type_key(self) -> str:
+        """
+        Return the key used to identify this parser type in CLI options.
+
+        This is the value users specify with --type option.
+        """
+        pass
+
+    @abstractmethod
+    def parse(self, lines: List[str]) -> List[Dict]:
+        """
+        Parse questions from lines of text.
+
+        Args:
+            lines: List of text lines from the document
+
+        Returns:
+            List of question dictionaries with 'question', 'answers',
+            'type', and 'correct_answer' keys
+        """
+        pass
+
+
+# =============================================================================
+# Parser Registry - Factory Pattern for extensibility
+# =============================================================================
+
+
+class QuestionParserRegistry:
+    """
+    Registry for question parsers.
+
+    This enables easy addition of new question types without modifying
+    existing code. Use the @register decorator on parser classes.
+    """
+
+    _parsers: Dict[str, Type[QuestionParser]] = {}
+
+    @classmethod
+    def register(cls, parser_class: Type[QuestionParser]):
+        """
+        Decorator to register a parser class.
+
+        Usage:
+            @QuestionParserRegistry.register
+            class MyParser(QuestionParser):
+                ...
+        """
+        # Create temporary instance to get the type_key
+        instance = parser_class()
+        cls._parsers[instance.type_key] = parser_class
+        return parser_class
+
+    @classmethod
+    def get_parser(cls, type_key: str) -> QuestionParser:
+        """
+        Get a parser instance by its type key.
+
+        Args:
+            type_key: The parser type key (e.g., 'multiple_choice')
+
+        Returns:
+            An instance of the corresponding parser
+
+        Raises:
+            KeyError: If no parser is registered for the given type
+        """
+        if type_key not in cls._parsers:
+            raise KeyError(f"No parser registered for type '{type_key}'")
+        return cls._parsers[type_key]()
+
+    @classmethod
+    def get_all_parsers(cls) -> List[QuestionParser]:
+        """
+        Get instances of all registered parsers.
+
+        Returns:
+            List of parser instances
+        """
+        return [parser_class() for parser_class in cls._parsers.values()]
+
+    @classmethod
+    def get_registered_types(cls) -> List[str]:
+        """
+        Get list of all registered parser type keys.
+
+        Returns:
+            List of type key strings
+        """
+        return list(cls._parsers.keys())
+
+
+# =============================================================================
+# Concrete Parser Implementations
+# =============================================================================
+
+
+@QuestionParserRegistry.register
+class MultipleChoiceParser(QuestionParser):
+    """
+    Parser for multiple choice questions.
+
+    Expected format:
+        Question
+        What is the question text?
+        A. Answer 1
+        B. Answer 2
+        C. Answer 3
+        D. Answer 4
+        Correct Answer: B  (optional)
+    """
+
+    ANSWER_LABELS = ["A", "B", "C", "D"]
+    NUM_ANSWERS = 4
+
+    @property
+    def question_type(self) -> str:
+        return "multiple_choice"
+
+    @property
+    def type_key(self) -> str:
+        return "multiple_choice"
+
+    def parse(self, lines: List[str]) -> List[Dict]:
+        """
+        Parse multiple choice questions from lines of text.
+
+        Args:
+            lines: List of text lines from the document
+
+        Returns:
+            List of dictionaries with 'question', 'answers', 'type', and 'correct_answer' keys
+        """
+        questions = []
+        i = 0
+
+        while i < len(lines):
+            line = lines[i]
+
+            # Check if this line starts with "Question"
+            if line.lower().startswith("question"):
+                question_data = self._parse_single_question(lines, i)
+                if question_data:
+                    questions.append(question_data["question"])
+                    i = question_data["next_index"]
+                else:
+                    i += 1
+            else:
+                i += 1
+
+        return questions
+
+    def _parse_single_question(
+        self, lines: List[str], start_index: int
+    ) -> Optional[Dict]:
+        """
+        Parse a single multiple choice question starting at the given index.
+
+        Args:
+            lines: All lines from the document
+            start_index: Index where "Question" marker was found
+
+        Returns:
+            Dictionary with 'question' and 'next_index' keys, or None if parsing fails
+        """
+        i = start_index
+
+        # Next line should be the actual question
+        if i + 1 >= len(lines):
+            raise ValueError(
+                f"Found 'Question' marker at line {i+1} but no question text follows"
+            )
+
+        question_text = lines[i + 1]
+        i += 2  # Move past "Question" marker and question text
+
+        # Collect the answer choices
+        answers = self._parse_answers(lines, i, question_text)
+        i += self.NUM_ANSWERS
+
+        # Check for correct answer line
+        correct_answer = self._find_correct_answer(lines, i)
+        if correct_answer is not None:
+            i += 1  # Move past the "Correct Answer" line
+        else:
+            correct_answer = get_random_correct_answer(self.NUM_ANSWERS - 1)
+
+        question_dict = create_question_dict(
+            question_text, answers, self.question_type, correct_answer
+        )
+
+        return {"question": question_dict, "next_index": i}
+
+    def _parse_answers(
+        self, lines: List[str], start_index: int, question_text: str
+    ) -> List[str]:
+        """
+        Parse the answer choices for a question.
+
+        Args:
+            lines: All lines from the document
+            start_index: Index where answers should start
+            question_text: The question text (for error messages)
+
+        Returns:
+            List of answer texts
+
+        Raises:
+            ValueError: If answers are missing or improperly formatted
+        """
+        answers = []
+        i = start_index
+
+        for expected_label in self.ANSWER_LABELS:
+            if i >= len(lines):
+                raise ValueError(
+                    f"Question '{question_text[:50]}...' does not have {self.NUM_ANSWERS} answer choices. "
+                    f"Missing answer {expected_label}"
+                )
+
+            answer_line = lines[i]
+
+            # Check if answer is properly labeled (e.g., "A. Some answer" or "A) Some answer")
+            pattern = rf"^{expected_label}[\.\)]\s*(.+)$"
+            match = re.match(pattern, answer_line, re.IGNORECASE)
+
+            if not match:
+                raise ValueError(
+                    f"Question '{question_text[:50]}...' has improperly formatted answer. "
+                    f"Expected answer labeled '{expected_label}', but found: '{answer_line}'"
+                )
+
+            answer_text = match.group(1).strip()
+            answers.append(answer_text)
+            i += 1
+
+        return answers
+
+    def _find_correct_answer(self, lines: List[str], index: int) -> Optional[int]:
+        """
+        Look for a "Correct Answer" line at the given index.
+
+        Args:
+            lines: All lines from the document
+            index: Index to check
+
+        Returns:
+            Correct answer index (0-3) if found, None otherwise
+        """
+        if index >= len(lines):
+            return None
+
+        pattern = r"^correct\s*answer:?\s*([A-D])"
+        return parse_correct_answer_line(lines[index], pattern, convert_letter_to_index)
+
+
+@QuestionParserRegistry.register
+class TrueFalseParser(QuestionParser):
+    """
+    Parser for true/false assumption questions.
+
+    Searches for sentences containing the word "Assume" and creates
+    true/false questions from them.
+
+    Expected format:
+        Assume that something is true.
+        Correct Answer: True  (optional)
+    """
+
+    ANSWERS = ["True", "False"]
+
+    @property
+    def question_type(self) -> str:
+        return "true_false"
+
+    @property
+    def type_key(self) -> str:
+        return "true_false"
+
+    def parse(self, lines: List[str]) -> List[Dict]:
+        """
+        Parse assumption-based true/false questions from lines of text.
+
+        Args:
+            lines: List of text lines from the document
+
+        Returns:
+            List of dictionaries with 'question', 'answers', 'type', and 'correct_answer' keys
+        """
+        questions = []
+
+        # Join lines to handle multi-line sentences, then re-split by sentence
+        full_text = " ".join(lines)
+
+        # Split into sentences (simple approach - can be improved with nltk if needed)
+        sentences = re.split(r"(?<=[.!?])\s+", full_text)
+
+        i = 0
+        while i < len(sentences):
+            sentence = sentences[i].strip()
+
+            # Check if sentence contains "assume" (case-insensitive)
+            if re.search(r"\bassume\b", sentence, re.IGNORECASE):
+                result = self._process_assumption_sentence(sentences, i, questions)
+                i = result["next_index"]
+            else:
+                i += 1
+
+        return questions
+
+    def _process_assumption_sentence(
+        self, sentences: List[str], index: int, questions: List[Dict]
+    ) -> Dict:
+        """
+        Process a sentence containing "assume".
+
+        Args:
+            sentences: All sentences
+            index: Current sentence index
+            questions: List of questions to potentially update (for trailing correct answers)
+
+        Returns:
+            Dictionary with 'next_index' key
+        """
+        sentence = sentences[index].strip()
+
+        # Handle leading "Correct Answer" from previous sentence
+        sentence = self._handle_leading_correct_answer(sentence, questions)
+
+        # Check for correct answer at end of sentence
+        result = self._parse_with_trailing_answer(sentence)
+        if result:
+            questions.append(result)
+            return {"next_index": index + 1}
+
+        # Create question from sentence
+        question_dict = create_question_dict(
+            sentence, self.ANSWERS.copy(), self.question_type, 0
+        )
+
+        # Look for correct answer in next sentence
+        next_index = index + 1
+        correct_answer = self._find_correct_answer_in_next(sentences, next_index)
+
+        if correct_answer is not None:
+            question_dict["correct_answer"] = correct_answer
+            # Only skip next sentence if it doesn't contain "assume"
+            if next_index < len(sentences) and not re.search(
+                r"\bassume\b", sentences[next_index], re.IGNORECASE
+            ):
+                next_index += 1
+        else:
+            question_dict["correct_answer"] = get_random_correct_answer(1)
+
+        questions.append(question_dict)
+        return {"next_index": next_index}
+
+    def _handle_leading_correct_answer(
+        self, sentence: str, questions: List[Dict]
+    ) -> str:
+        """
+        Handle "Correct Answer: X  Assume ..." pattern where correct answer
+        belongs to the previous question.
+
+        Args:
+            sentence: Current sentence
+            questions: List of previous questions
+
+        Returns:
+            The sentence with leading correct answer removed if found
+        """
+        leading_correct = re.match(
+            r"^correct\s*answer:?\s*(true|false|t|f)\s+(.+)",
+            sentence,
+            re.IGNORECASE,
+        )
+
+        if leading_correct:
+            # Apply the correct answer to the PREVIOUS question
+            if len(questions) > 0:
+                answer_text = leading_correct.group(1)
+                questions[-1]["correct_answer"] = convert_true_false_to_index(
+                    answer_text
+                )
+
+            # Return just the assume part
+            return leading_correct.group(2).strip()
+
+        return sentence
+
+    def _parse_with_trailing_answer(self, sentence: str) -> Optional[Dict]:
+        """
+        Parse sentence with correct answer at the end.
+
+        Pattern: "Assume text. Correct Answer: True"
+
+        Args:
+            sentence: The sentence to parse
+
+        Returns:
+            Question dict if pattern matches, None otherwise
+        """
+        correct_at_end = re.search(
+            r"^(.+?)\.\s*correct\s*answer:?\s*(true|false|t|f)\s*$",
+            sentence,
+            re.IGNORECASE,
+        )
+
+        if correct_at_end:
+            question_text = correct_at_end.group(1).strip() + "."
+            answer_text = correct_at_end.group(2)
+
+            return create_question_dict(
+                question_text,
+                self.ANSWERS.copy(),
+                self.question_type,
+                convert_true_false_to_index(answer_text),
+            )
+
+        return None
+
+    def _find_correct_answer_in_next(
+        self, sentences: List[str], index: int
+    ) -> Optional[int]:
+        """
+        Look for correct answer in the next sentence.
+
+        Args:
+            sentences: All sentences
+            index: Index of next sentence to check
+
+        Returns:
+            Correct answer index if found, None otherwise
+        """
+        if index >= len(sentences):
+            return None
+
+        pattern = r"^correct\s*answer:?\s*(true|false|t|f)"
+        return parse_correct_answer_line(
+            sentences[index], pattern, convert_true_false_to_index
+        )
+
+
+# =============================================================================
+# Legacy function wrappers for backward compatibility
+# =============================================================================
 
 
 def parse_multiple_choice_questions(lines: List[str]) -> List[Dict]:
     """
     Parse multiple choice questions from lines of text.
 
+    This is a backward-compatible wrapper around MultipleChoiceParser.
+
     Args:
         lines: List of text lines from the document
 
     Returns:
         List of dictionaries with 'question', 'answers', 'type', and 'correct_answer' keys
     """
-    import random
-
-    questions = []
-    i = 0
-
-    while i < len(lines):
-        line = lines[i]
-
-        # Check if this line starts with "Question"
-        if line.lower().startswith("question"):
-            # Next line should be the actual question
-            if i + 1 >= len(lines):
-                raise ValueError(
-                    f"Found 'Question' marker at line {i+1} but no question text follows"
-                )
-
-            question_text = lines[i + 1]
-            i += 2  # Move past "Question" marker and question text
-
-            # Now collect the 4 answer choices
-            answers = []
-            expected_labels = ["A", "B", "C", "D"]
-
-            for expected_label in expected_labels:
-                if i >= len(lines):
-                    raise ValueError(
-                        f"Question '{question_text[:50]}...' does not have 4 answer choices. "
-                        f"Missing answer {expected_label}"
-                    )
-
-                answer_line = lines[i]
-
-                # Check if answer is properly labeled (e.g., "A. Some answer" or "A) Some answer")
-                pattern = rf"^{expected_label}[\.\)]\s*(.+)$"
-                match = re.match(pattern, answer_line, re.IGNORECASE)
-
-                if not match:
-                    raise ValueError(
-                        f"Question '{question_text[:50]}...' has improperly formatted answer. "
-                        f"Expected answer labeled '{expected_label}', but found: '{answer_line}'"
-                    )
-
-                answer_text = match.group(1).strip()
-                answers.append(answer_text)
-                i += 1
-
-            # Build the question dict
-            question_dict = {
-                "question": question_text,
-                "answers": answers,
-                "type": "multiple_choice",
-            }
-
-            # Check if there's a "Correct Answer" line next
-            correct_answer_found = False
-            if i < len(lines):
-                next_line = lines[i].strip()
-                # Match "Correct Answer:" or "Correct Answer" (case insensitive)
-                correct_answer_match = re.match(
-                    r"^correct\s*answer:?\s*([A-D])", next_line, re.IGNORECASE
-                )
-
-                if correct_answer_match:
-                    correct_label = correct_answer_match.group(1).upper()
-                    # Convert A, B, C, D to 0, 1, 2, 3
-                    correct_index = ord(correct_label) - ord("A")
-                    question_dict["correct_answer"] = correct_index
-                    correct_answer_found = True
-                    i += 1  # Move past the "Correct Answer" line
-
-            # If no correct answer specified, pick random
-            if not correct_answer_found:
-                question_dict["correct_answer"] = random.randint(0, 3)
-
-            questions.append(question_dict)
-        else:
-            i += 1
-
-    return questions
+    parser = MultipleChoiceParser()
+    return parser.parse(lines)
 
 
 def parse_assumption_questions(lines: List[str]) -> List[Dict]:
     """
     Parse assumption-based true/false questions from lines of text.
-    Searches for sentences containing the word "Assume".
+
+    This is a backward-compatible wrapper around TrueFalseParser.
 
     Args:
         lines: List of text lines from the document
@@ -114,112 +623,13 @@ def parse_assumption_questions(lines: List[str]) -> List[Dict]:
     Returns:
         List of dictionaries with 'question', 'answers', 'type', and 'correct_answer' keys
     """
-    import random
+    parser = TrueFalseParser()
+    return parser.parse(lines)
 
-    questions = []
 
-    # Join lines to handle multi-line sentences, then re-split by sentence
-    full_text = " ".join(lines)
-
-    # Split into sentences (simple approach - can be improved with nltk if needed)
-    # This regex splits on '.', '!', or '?' followed by space or end of string
-    sentences = re.split(r"(?<=[.!?])\s+", full_text)
-
-    i = 0
-    while i < len(sentences):
-        sentence = sentences[i].strip()
-
-        # Check if sentence contains "assume" (case-insensitive)
-        if re.search(r"\bassume\b", sentence, re.IGNORECASE):
-            # Check if sentence has pattern "Correct Answer: X  Assume ..."
-            # This happens when sentences get joined - the "Correct Answer" belongs to previous question
-            leading_correct = re.match(
-                r"^correct\s*answer:?\s*(true|false|t|f)\s+(.+)",
-                sentence,
-                re.IGNORECASE,
-            )
-
-            if leading_correct:
-                # Apply the correct answer to the PREVIOUS question
-                if len(questions) > 0:
-                    answer_text = leading_correct.group(1).upper()
-                    if answer_text in ["TRUE", "T"]:
-                        questions[-1]["correct_answer"] = 0
-                    else:  # FALSE or F
-                        questions[-1]["correct_answer"] = 1
-
-                # Extract just the assume part for the current question
-                sentence = leading_correct.group(2).strip()
-
-            # Now check if correct answer is at the END of this sentence
-            # Pattern: "Assume text. Correct Answer: True"
-            correct_at_end = re.search(
-                r"^(.+?)\.\s*correct\s*answer:?\s*(true|false|t|f)\s*$",
-                sentence,
-                re.IGNORECASE,
-            )
-
-            if correct_at_end:
-                # Extract the question part (before "Correct Answer")
-                question_text = correct_at_end.group(1).strip() + "."
-                answer_text = correct_at_end.group(2).upper()
-
-                question_dict = {
-                    "question": question_text,
-                    "answers": ["True", "False"],
-                    "type": "true_false",
-                }
-
-                # Convert to index: True/T = 0, False/F = 1
-                if answer_text in ["TRUE", "T"]:
-                    question_dict["correct_answer"] = 0
-                else:  # FALSE or F
-                    question_dict["correct_answer"] = 1
-
-                questions.append(question_dict)
-                i += 1
-                continue
-
-            # Use whole sentence as question
-            question_dict = {
-                "question": sentence,
-                "answers": ["True", "False"],
-                "type": "true_false",
-            }
-
-            # Check if there's a "Correct Answer" in the next sentence
-            correct_answer_found = False
-            if i + 1 < len(sentences):
-                next_sentence = sentences[i + 1].strip()
-                # Match "Correct Answer: True/False" or "Correct Answer: T/F" (case insensitive)
-                correct_answer_match = re.match(
-                    r"^correct\s*answer:?\s*(true|false|t|f)",
-                    next_sentence,
-                    re.IGNORECASE,
-                )
-
-                if correct_answer_match:
-                    answer_text = correct_answer_match.group(1).upper()
-                    # Convert to index: True/T = 0, False/F = 1
-                    if answer_text in ["TRUE", "T"]:
-                        question_dict["correct_answer"] = 0
-                    else:  # FALSE or F
-                        question_dict["correct_answer"] = 1
-                    correct_answer_found = True
-                    # Only skip the next sentence if it doesn't contain "assume"
-                    # (because it might be "Correct Answer: X  Assume next question")
-                    if not re.search(r"\bassume\b", next_sentence, re.IGNORECASE):
-                        i += 1  # Skip the "Correct Answer" sentence
-
-            # If no correct answer specified, pick random
-            if not correct_answer_found:
-                question_dict["correct_answer"] = random.randint(0, 1)
-
-            questions.append(question_dict)
-
-        i += 1
-
-    return questions
+# =============================================================================
+# Main parsing function
+# =============================================================================
 
 
 def parse_docx_questions(docx_path: str, question_type: str = "all") -> List[Dict]:
@@ -231,10 +641,12 @@ def parse_docx_questions(docx_path: str, question_type: str = "all") -> List[Dic
         question_type: Type of questions to parse ('multiple_choice', 'true_false', or 'all')
 
     Returns:
-        List of dictionaries with 'question', 'answers', and 'type' keys
+        List of dictionaries with 'question', 'answers', 'type', and 'correct_answer' keys
     """
-    # Validate question_type
-    valid_types = ["multiple_choice", "true_false", "all"]
+    # Build valid types from registry
+    registered_types = QuestionParserRegistry.get_registered_types()
+    valid_types = registered_types + ["all"]
+
     if question_type not in valid_types:
         raise ValueError(
             f"Invalid question_type '{question_type}'. Must be one of {valid_types}"
@@ -242,7 +654,6 @@ def parse_docx_questions(docx_path: str, question_type: str = "all") -> List[Dic
 
     # Extract text from docx
     with docx2python(docx_path) as docx_content:
-        # Get all paragraphs as a flat list
         text = docx_content.text
 
     # Split into lines and clean up
@@ -250,17 +661,21 @@ def parse_docx_questions(docx_path: str, question_type: str = "all") -> List[Dic
 
     questions = []
 
-    # Parse multiple choice questions if requested
-    if question_type in ["multiple_choice", "all"]:
-        mc_questions = parse_multiple_choice_questions(lines)
-        questions.extend(mc_questions)
-
-    # Parse assumption questions if requested
-    if question_type in ["true_false", "all"]:
-        tf_questions = parse_assumption_questions(lines)
-        questions.extend(tf_questions)
+    if question_type == "all":
+        # Use all registered parsers
+        for parser in QuestionParserRegistry.get_all_parsers():
+            questions.extend(parser.parse(lines))
+    else:
+        # Use specific parser
+        parser = QuestionParserRegistry.get_parser(question_type)
+        questions.extend(parser.parse(lines))
 
     return questions
+
+
+# =============================================================================
+# CLI Interface
+# =============================================================================
 
 
 @click.command()

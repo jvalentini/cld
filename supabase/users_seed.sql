@@ -2,13 +2,13 @@
 -- All users have password: cld123
 -- Password hash generated with bcrypt (cost factor 10)
 
-INSERT INTO users (username, email, password_hash, full_name) VALUES ('dorothy.baker392', 'dorothy.baker392@example.com', '$2b$10$VF1HoQ7YZSgeoy2NtKXsGOz1uUd5GC7cvGfvj/7NXCdk3IsyhgmIi', 'Dorothy Baker');
-INSERT INTO users (username, email, password_hash, full_name) VALUES ('janet.white755', 'janet.white755@example.com', '$2b$10$VF1HoQ7YZSgeoy2NtKXsGOz1uUd5GC7cvGfvj/7NXCdk3IsyhgmIi', 'Janet White');
-INSERT INTO users (username, email, password_hash, full_name) VALUES ('jason.brown958', 'jason.brown958@example.com', '$2b$10$VF1HoQ7YZSgeoy2NtKXsGOz1uUd5GC7cvGfvj/7NXCdk3IsyhgmIi', 'Jason Brown');
-INSERT INTO users (username, email, password_hash, full_name) VALUES ('kathleen.myers617', 'kathleen.myers617@example.com', '$2b$10$VF1HoQ7YZSgeoy2NtKXsGOz1uUd5GC7cvGfvj/7NXCdk3IsyhgmIi', 'Kathleen Myers');
-INSERT INTO users (username, email, password_hash, full_name) VALUES ('kenneth.young802', 'kenneth.young802@example.com', '$2b$10$VF1HoQ7YZSgeoy2NtKXsGOz1uUd5GC7cvGfvj/7NXCdk3IsyhgmIi', 'Kenneth Young');
-INSERT INTO users (username, email, password_hash, full_name) VALUES ('karen.cook639', 'karen.cook639@example.com', '$2b$10$VF1HoQ7YZSgeoy2NtKXsGOz1uUd5GC7cvGfvj/7NXCdk3IsyhgmIi', 'Karen Cook');
-INSERT INTO users (username, email, password_hash, full_name) VALUES ('kimberly.richardson774', 'kimberly.richardson774@example.com', '$2b$10$VF1HoQ7YZSgeoy2NtKXsGOz1uUd5GC7cvGfvj/7NXCdk3IsyhgmIi', 'Kimberly Richardson');
+INSERT INTO users (username, email, password_hash, full_name) VALUES ('justin.valentini', 'justin.valentini@cldinc.com', '$2b$10$VF1HoQ7YZSgeoy2NtKXsGOz1uUd5GC7cvGfvj/7NXCdk3IsyhgmIi', 'Justin Valentini');
+INSERT INTO users (username, email, password_hash, full_name) VALUES ('chris.turner', 'chris.turner@cldinc.com', '$2b$10$VF1HoQ7YZSgeoy2NtKXsGOz1uUd5GC7cvGfvj/7NXCdk3IsyhgmIi', 'Chris Turner');
+INSERT INTO users (username, email, password_hash, full_name) VALUES ('paul.bucelwicz', 'paul.bucelwicz@cldinc.com', '$2b$10$VF1HoQ7YZSgeoy2NtKXsGOz1uUd5GC7cvGfvj/7NXCdk3IsyhgmIi', 'Paul Bucelwicz');
+INSERT INTO users (username, email, password_hash, full_name) VALUES ('tyler.neilson', 'tyler.neilson@cldinc.com', '$2b$10$VF1HoQ7YZSgeoy2NtKXsGOz1uUd5GC7cvGfvj/7NXCdk3IsyhgmIi', 'Tyler Neilson');
+INSERT INTO users (username, email, password_hash, full_name) VALUES ('dorothy.russo', 'dorothy.russo@cldinc.com', '$2b$10$VF1HoQ7YZSgeoy2NtKXsGOz1uUd5GC7cvGfvj/7NXCdk3IsyhgmIi', 'Dorothy Russo');
+INSERT INTO users (username, email, password_hash, full_name) VALUES ('tom.amari', 'tom.amari@cldinc.com', '$2b$10$VF1HoQ7YZSgeoy2NtKXsGOz1uUd5GC7cvGfvj/7NXCdk3IsyhgmIi', 'Tom Amari');
+INSERT INTO users (username, email, password_hash, full_name) VALUES ('kim.rocha', 'kim.rocha@cldinc.com', '$2b$10$VF1HoQ7YZSgeoy2NtKXsGOz1uUd5GC7cvGfvj/7NXCdk3IsyhgmIi', 'Kim Rocha');
 INSERT INTO users (username, email, password_hash, full_name) VALUES ('mary.green510', 'mary.green510@example.com', '$2b$10$VF1HoQ7YZSgeoy2NtKXsGOz1uUd5GC7cvGfvj/7NXCdk3IsyhgmIi', 'Mary Green');
 INSERT INTO users (username, email, password_hash, full_name) VALUES ('jennifer.peterson150', 'jennifer.peterson150@example.com', '$2b$10$VF1HoQ7YZSgeoy2NtKXsGOz1uUd5GC7cvGfvj/7NXCdk3IsyhgmIi', 'Jennifer Peterson');
 INSERT INTO users (username, email, password_hash, full_name) VALUES ('jessica.price495', 'jessica.price495@example.com', '$2b$10$VF1HoQ7YZSgeoy2NtKXsGOz1uUd5GC7cvGfvj/7NXCdk3IsyhgmIi', 'Jessica Price');
