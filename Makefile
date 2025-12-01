@@ -3,8 +3,10 @@
 # Variables
 PARSER_DIR = quiz-parser
 QUIZ_DIR = quiz-app
+LOADTEST_DIR = load-testing
 PARSER_IMAGE = docx-parser
 QUIZ_IMAGE = quiz-app
+LOADTEST_IMAGE = quiz-load-tester
 
 # Default input/output files
 INPUT_DOCX ?= input.docx
@@ -21,16 +23,16 @@ help: ## Show this help message
 	@echo ""
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(YELLOW)%-25s$(NC) %s\n", $$1, $$2}'
 	@echo ""
-	@echo "$(GREEN)For parser-specific commands:$(NC)"
+	@echo "$(GREEN)For subproject-specific commands:$(NC)"
 	@echo "  $(YELLOW)make parser-help$(NC)            Show all parser commands"
-	@echo "  $(YELLOW)cd $(PARSER_DIR) && make help$(NC)   Show parser help directly"
+	@echo "  $(YELLOW)make loadtest-help$(NC)          Show all load testing commands"
 
 ##
 ## Build Commands
 ##
 
 .PHONY: build-all
-build-all: build-parser build-quiz ## Build all Docker images
+build-all: build-parser build-quiz build-loadtest ## Build all Docker images
 
 .PHONY: build-parser
 build-parser: ## Build the DOCX parser Docker image
@@ -118,6 +120,38 @@ logs-quiz: ## Show quiz app logs
 quiz-clean: stop-quiz ## Stop and remove quiz app container
 
 ##
+## Load Testing Commands (delegated to load-testing/Makefile)
+##
+
+.PHONY: build-loadtest
+build-loadtest: ## Build the load testing Docker image
+	@$(MAKE) -C $(LOADTEST_DIR) build
+
+.PHONY: loadtest
+loadtest: ## Run load test (100 users, 200 submissions)
+	@$(MAKE) -C $(LOADTEST_DIR) run
+
+.PHONY: loadtest-fast
+loadtest-fast: ## Run load test in fast mode
+	@$(MAKE) -C $(LOADTEST_DIR) run-fast
+
+.PHONY: loadtest-quick
+loadtest-quick: ## Quick smoke test (10 users, 20 submissions)
+	@$(MAKE) -C $(LOADTEST_DIR) run-quick
+
+.PHONY: loadtest-full
+loadtest-full: ## Full load test with all 1000 users
+	@$(MAKE) -C $(LOADTEST_DIR) run-full
+
+.PHONY: loadtest-help
+loadtest-help: ## Show load testing help
+	@$(MAKE) -C $(LOADTEST_DIR) help
+
+.PHONY: loadtest-clean
+loadtest-clean: ## Clean load testing Docker image
+	@$(MAKE) -C $(LOADTEST_DIR) clean
+
+##
 ## Docker Compose Commands
 ##
 
@@ -169,24 +203,26 @@ clean: quiz-clean parser-clean ## Clean all generated files and containers
 	@echo "$(GREEN)✓ Cleanup complete$(NC)"
 
 .PHONY: clean-all
-clean-all: clean ## Clean everything including Docker images
+clean-all: clean loadtest-clean ## Clean everything including Docker images
 	@echo "$(GREEN)Removing Docker images...$(NC)"
 	-docker rmi $(PARSER_IMAGE) 2>/dev/null || true
 	-docker rmi $(QUIZ_IMAGE) 2>/dev/null || true
+	-docker rmi $(LOADTEST_IMAGE) 2>/dev/null || true
 	@$(MAKE) -C $(PARSER_DIR) clean-all
 	@echo "$(GREEN)✓ All clean$(NC)"
 
 .PHONY: status
 status: ## Show status of containers and images
 	@echo "$(GREEN)Docker Containers:$(NC)"
-	@docker ps -a | grep -E '($(PARSER_IMAGE)|$(QUIZ_IMAGE))' || echo "  No containers running"
+	@docker ps -a | grep -E '($(PARSER_IMAGE)|$(QUIZ_IMAGE)|$(LOADTEST_IMAGE))' || echo "  No containers running"
 	@echo ""
 	@echo "$(GREEN)Docker Images:$(NC)"
-	@docker images | grep -E '($(PARSER_IMAGE)|$(QUIZ_IMAGE))' || echo "  No images built"
+	@docker images | grep -E '($(PARSER_IMAGE)|$(QUIZ_IMAGE)|$(LOADTEST_IMAGE))' || echo "  No images built"
 	@echo ""
 	@echo "$(GREEN)Project Structure:$(NC)"
 	@echo "  Parser dir: $(PARSER_DIR)/"
 	@echo "  Quiz dir: $(QUIZ_DIR)/"
+	@echo "  Load test dir: $(LOADTEST_DIR)/"
 
 .PHONY: info
 info: status ## Show project information
