@@ -1,0 +1,27 @@
+# Dockerfile for running Playwright e2e tests
+# This image includes browsers and all dependencies needed for headless testing
+
+FROM mcr.microsoft.com/playwright:v1.49.0-noble
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files first for better caching
+COPY package*.json ./
+
+# Install all dependencies (including dev dependencies)
+RUN npm ci
+
+# Copy the rest of the application
+COPY . .
+
+# Install Playwright browsers (should already be included in base image, but ensure they're available)
+RUN npx playwright install --with-deps chromium firefox webkit
+
+# Set environment variables for CI mode
+ENV CI=true
+ENV E2E_BASE_URL=http://host.docker.internal:3000/cld
+
+# Default command runs all e2e tests
+CMD ["npm", "run", "e2e"]
+

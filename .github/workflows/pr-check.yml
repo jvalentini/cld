@@ -24,6 +24,18 @@ jobs:
         with:
           dockerfile: quiz-app/Dockerfile
           failure-threshold: warning
+      
+      - name: Lint quiz app e2e Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: quiz-app/Dockerfile.e2e
+          failure-threshold: warning
+      
+      - name: Lint quiz app dev Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: quiz-app/Dockerfile.dev
+          failure-threshold: warning
 
   validate-json:
     name: Validate JSON Files
@@ -76,9 +88,14 @@ jobs:
             "quiz-parser/Makefile"
             "Makefile"
             "quiz-app/Dockerfile"
+            "quiz-app/Dockerfile.e2e"
+            "quiz-app/Dockerfile.dev"
             "quiz-app/package.json"
+            "quiz-app/playwright.config.js"
             "quiz-app/src/App.vue"
             "quiz-app/src/main.js"
+            "quiz-app/e2e/quiz-app.spec.js"
+            "quiz-app/e2e/auth.spec.js"
           )
           
           missing_files=()

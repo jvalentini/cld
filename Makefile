@@ -21,7 +21,7 @@ NC = \033[0m # No Color
 help: ## Show this help message
 	@echo "$(GREEN)Root Makefile - Available targets:$(NC)"
 	@echo ""
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(YELLOW)%-25s$(NC) %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(YELLOW)%-25s$(NC) %s\n", $$1, $$2}'
 	@echo ""
 	@echo "$(GREEN)For subproject-specific commands:$(NC)"
 	@echo "  $(YELLOW)make parser-help$(NC)            Show all parser commands"
@@ -118,6 +118,54 @@ logs-quiz: ## Show quiz app logs
 
 .PHONY: quiz-clean
 quiz-clean: stop-quiz ## Stop and remove quiz app container
+
+##
+## E2E Testing Commands (Playwright)
+##
+
+.PHONY: e2e
+e2e: ## Run Playwright e2e tests (requires dev server)
+	@$(MAKE) -C $(QUIZ_DIR) e2e
+
+.PHONY: e2e-ui
+e2e-ui: ## Run Playwright tests with UI mode
+	@$(MAKE) -C $(QUIZ_DIR) e2e-ui
+
+.PHONY: e2e-headed
+e2e-headed: ## Run Playwright tests in headed mode
+	@$(MAKE) -C $(QUIZ_DIR) e2e-headed
+
+.PHONY: e2e-debug
+e2e-debug: ## Run Playwright tests in debug mode
+	@$(MAKE) -C $(QUIZ_DIR) e2e-debug
+
+.PHONY: e2e-report
+e2e-report: ## Show Playwright HTML report
+	@$(MAKE) -C $(QUIZ_DIR) e2e-report
+
+.PHONY: e2e-install
+e2e-install: ## Install Playwright browsers
+	@$(MAKE) -C $(QUIZ_DIR) e2e-install
+
+.PHONY: e2e-docker
+e2e-docker: ## Run e2e tests in Docker containers
+	@$(MAKE) -C $(QUIZ_DIR) e2e-docker
+
+.PHONY: e2e-docker-down
+e2e-docker-down: ## Stop e2e Docker containers
+	@$(MAKE) -C $(QUIZ_DIR) e2e-docker-down
+
+.PHONY: e2e-chromium
+e2e-chromium: ## Run e2e tests on Chromium only
+	@$(MAKE) -C $(QUIZ_DIR) e2e-chromium
+
+.PHONY: e2e-firefox
+e2e-firefox: ## Run e2e tests on Firefox only
+	@$(MAKE) -C $(QUIZ_DIR) e2e-firefox
+
+.PHONY: e2e-webkit
+e2e-webkit: ## Run e2e tests on WebKit only
+	@$(MAKE) -C $(QUIZ_DIR) e2e-webkit
 
 ##
 ## Load Testing Commands (delegated to load-testing/Makefile)
