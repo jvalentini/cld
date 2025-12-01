@@ -1011,15 +1011,16 @@ export default {
           console.log('Submission data:', submissionData)
           
           // Insert submission record
-          const { error: submissionError } = await supabase
+          const { data: submissionResult, error: submissionError } = await supabase
             .from('submissions')
-            .insert(submissionData);
+            .insert(submissionData)
+            .select();
           
           if (submissionError) {
             console.error('Error saving submission:', submissionError)
             this.error = 'Quiz completed, but failed to save submission: ' + submissionError.message
           } else {
-            console.log('Submission saved successfully:', data)
+            console.log('Submission saved successfully:', submissionResult)
             if (this.currentUser) {
               this.success = 'Your score has been recorded on the leaderboard!'
             }
@@ -1089,6 +1090,7 @@ export default {
         email: user.email,
         fullName: user.full_name
       }
+      this.guestMode = false  // Clear guest mode on login
       setAuthToken(user)
       this.success = `Welcome back, ${user.username}!`
       setTimeout(() => { this.success = null }, 3000)
