@@ -8,7 +8,7 @@
       "It depends"
     ],
     "type": "multiple_choice",
-    "correct_answer": 2
+    "correct_answer": 0
   },
   {
     "question": "Did you use AI tools in creating this solution?",
@@ -19,7 +19,7 @@
       "What are AI tools"
     ],
     "type": "multiple_choice",
-    "correct_answer": 1
+    "correct_answer": 0
   },
   {
     "question": "If so, which ones",
@@ -30,6 +30,6 @@
       "Other"
     ],
     "type": "multiple_choice",
-    "correct_answer": 2
+    "correct_answer": 1
   }
 ]
