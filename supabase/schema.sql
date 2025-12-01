@@ -6,6 +6,7 @@ DROP TABLE IF EXISTS submissions CASCADE;
 DROP TABLE IF EXISTS answers CASCADE;
 DROP TABLE IF EXISTS questions CASCADE;
 DROP TABLE IF EXISTS quizzes CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
 
 -- Create quizzes table
 CREATE TABLE quizzes (
@@ -232,3 +233,102 @@ COMMENT ON TABLE answers IS 'Stores answer choices for questions with guess coun
 COMMENT ON TABLE submissions IS 'Stores user quiz submissions with scores';
 COMMENT ON COLUMN answers.guesses IS 'Number of times this answer was selected';
 COMMENT ON COLUMN questions.correct_answer_id IS 'Foreign key to the correct answer';
+
+-- User Authentication Schema Updates
+-- This file contains the schema changes needed to add user authentication
+
+-- Create users table with SERIAL primary key
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    full_name VARCHAR(100),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Add user_id to submissions table
+ALTER TABLE submissions 
+ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE SET NULL;
+
+-- Create index for better query performance
+CREATE INDEX IF NOT EXISTS idx_submissions_user_id ON submissions(user_id);
+CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
+-- Update trigger for users table
+DROP TRIGGER IF EXISTS update_users_updated_at ON users;
+CREATE TRIGGER update_users_updated_at
+    BEFORE UPDATE ON users
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- RLS Policies for users table
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+
+-- Allow public to read user info (except password)
+CREATE POLICY "Allow public read access to users"
+    ON users FOR SELECT
+    TO anon, authenticated
+    USING (true);
+
+-- Allow users to insert (sign up)
+CREATE POLICY "Allow public insert to users"
+    ON users FOR INSERT
+    TO anon, authenticated
+    WITH CHECK (true);
+
+-- Allow users to update their own data
+CREATE POLICY "Allow users to update own data"
+    ON users FOR UPDATE
+    TO anon, authenticated
+    USING (true)
+    WITH CHECK (true);
+
+-- Create view for leaderboard by quiz (top scores per quiz)
+CREATE OR REPLACE VIEW quiz_leaderboard AS
+SELECT 
+    s.quiz_id,
+    q.name AS quiz_name,
+    s.user_id,
+    u.username,
+    u.full_name,
+    s.score_percentage,
+    s.correct_answers,
+    s.total_questions,
+    s.submitted_at,
+    ROW_NUMBER() OVER (PARTITION BY s.quiz_id ORDER BY s.score_percentage DESC, s.submitted_at ASC) AS rank
+FROM submissions s
+JOIN quizzes q ON s.quiz_id = q.id
+LEFT JOIN users u ON s.user_id = u.id
+WHERE s.user_id IS NOT NULL
+ORDER BY s.quiz_id, s.score_percentage DESC, s.submitted_at ASC;
+
+-- Create view for most active users (by submission count)
+CREATE OR REPLACE VIEW user_activity_leaderboard AS
+SELECT 
+    u.id AS user_id,
+    u.username,
+    u.full_name,
+    COUNT(s.id) AS total_submissions,
+    ROUND(AVG(s.score_percentage), 2) AS average_score,
+    MAX(s.score_percentage) AS highest_score,
+    MIN(s.score_percentage) AS lowest_score,
+    MAX(s.submitted_at) AS last_submission
+FROM users u
+LEFT JOIN submissions s ON u.id = s.user_id
+GROUP BY u.id, u.username, u.full_name
+HAVING COUNT(s.id) > 0
+ORDER BY total_submissions DESC, average_score DESC;
+
+-- Grant permissions on views
+GRANT SELECT ON quiz_leaderboard TO anon, authenticated;
+GRANT SELECT ON user_activity_leaderboard TO anon, authenticated;
+
+-- Comments
+COMMENT ON TABLE users IS 'Stores user accounts with hashed passwords';
+COMMENT ON COLUMN users.password_hash IS 'Bcrypt hashed password with salt';
+COMMENT ON COLUMN submissions.user_id IS 'Foreign key to user who submitted the quiz';
+COMMENT ON VIEW quiz_leaderboard IS 'Top scores per quiz with user rankings';
+COMMENT ON VIEW user_activity_leaderboard IS 'Most active users by submission count';

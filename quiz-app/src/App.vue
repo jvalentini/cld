@@ -1,68 +1,111 @@
 <script setup>
+import { ref, onMounted } from 'vue'
 import { supabase } from './supabaseClient'
+import { setAuthToken, clearAuthToken, getCurrentUser } from './auth'
+import LoginForm from './components/LoginForm.vue'
+import LeaderboardView from './components/LeaderboardView.vue'
 </script>
 <template>
   <div class="container">
-    <div class="header">
-      <div class="header-content">
-        <h1>📝 Quiz App</h1>
-        <p class="subtitle">Test your knowledge</p>
+    <div class="header-modern">
+      <!-- Row 1: Branding -->
+      <div class="header-top">
+        <div class="brand-section">
+          <h1>📝 Quiz App</h1>
+          <p class="subtitle">Test your knowledge</p>
+        </div>
       </div>
-      <div class="nav-buttons">
-        <button 
-          v-if="currentView !== 'quiz' || quizStarted || quizCompleted"
-          class="btn-nav" 
-          @click="goToQuizPage"
-        >
-          🏠 Take Quiz
-        </button>
-        <button 
-          v-if="currentView !== 'stats'"
-          class="btn-nav" 
-          @click="goToStatsPage"
-        >
-          📊 View Statistics
-        </button>
+      
+      <!-- Row 2: Navigation and User Info -->
+      <div class="header-bottom">
+        <div class="nav-section">
+          <button 
+            v-if="currentView !== 'quiz' || quizStarted || quizCompleted"
+            class="btn-nav" 
+            @click="goToQuizPage"
+          >
+            🏠 Take Quiz
+          </button>
+          <button 
+            v-if="currentView !== 'leaderboard'"
+            class="btn-nav" 
+            @click="goToLeaderboard"
+          >
+            🏆 Leaderboard
+          </button>
+          <button 
+            v-if="currentView !== 'stats'"
+            class="btn-nav" 
+            @click="goToStatsPage"
+          >
+            📊 Statistics
+          </button>
+        </div>
+        
+        <div v-if="currentUser" class="user-section">
+          <div class="user-info">
+            <span class="user-icon">👤</span>
+            <span class="user-name">{{ currentUser.fullName || currentUser.username }}</span>
+          </div>
+          <button class="btn-logout" @click="handleLogout">
+            Logout
+          </button>
+        </div>
       </div>
-    </div>
-
-    <!-- Breadcrumb -->
-    <div v-if="currentView !== 'quiz' || quizStarted || quizCompleted" class="breadcrumb">
-      <span @click="goToQuizPage" class="breadcrumb-link">Home</span>
-      
-      <!-- When taking or completed a quiz -->
-      <template v-if="(quizStarted || quizCompleted) && currentView === 'quiz'">
-        <span class="breadcrumb-separator">›</span>
-        <span class="breadcrumb-current">{{ currentQuizName || 'Quiz' }}</span>
-      </template>
-      
-      <!-- When on stats overview -->
-      <template v-if="currentView === 'stats'">
-        <span class="breadcrumb-separator">›</span>
-        <span class="breadcrumb-current">Statistics</span>
-      </template>
-      
-      <!-- When viewing individual quiz stats -->
-      <template v-if="currentView === 'quiz-stats'">
-        <span class="breadcrumb-separator">›</span>
-        <span @click="goToStatsPage" class="breadcrumb-link">Statistics</span>
-        <span class="breadcrumb-separator">›</span>
-        <span class="breadcrumb-current">{{ selectedQuizStats?.quiz_name || 'Quiz Details' }}</span>
-      </template>
-      
-      <!-- When viewing question detail -->
-      <template v-if="currentView === 'question-detail'">
-        <span class="breadcrumb-separator">›</span>
-        <span @click="goToStatsPage" class="breadcrumb-link">Statistics</span>
-        <span class="breadcrumb-separator">›</span>
-        <span @click="goBackToQuizStats" class="breadcrumb-link">{{ selectedQuizStats?.quiz_name || 'Quiz Details' }}</span>
-        <span class="breadcrumb-separator">›</span>
-        <span class="breadcrumb-current">Question Details</span>
-      </template>
     </div>
 
     <div v-if="error" class="error">{{ error }}</div>
     <div v-if="success" class="success">{{ success }}</div>
+
+    <!-- Login/Signup for non-authenticated users on home page -->
+    <div v-if="!currentUser && currentView === 'quiz' && !quizStarted">
+      <LoginForm 
+        :isLogin="isLoginMode"
+        @login-success="handleLoginSuccess"
+        @toggle-mode="isLoginMode = !isLoginMode"
+      />
+      
+      <div class="guest-access">
+        <p>Or continue as guest (limited features)</p>
+        <button class="btn-secondary" @click="continueAsGuest">
+          Continue as Guest
+        </button>
+      </div>
+    </div>
+
+    <!-- Rest of existing UI only shown if logged in or guest mode -->
+    <div v-if="currentUser || guestMode">
+      <!-- Breadcrumb -->
+      <div v-if="currentView !== 'quiz' || quizStarted || quizCompleted" class="breadcrumb">
+        <span @click="goToQuizPage" class="breadcrumb-link">Home</span>
+        
+        <template v-if="(quizStarted || quizCompleted) && currentView === 'quiz'">
+          <span class="breadcrumb-separator">›</span>
+          <span class="breadcrumb-current">{{ currentQuizName || 'Quiz' }}</span>
+        </template>
+        
+        <template v-if="currentView === 'stats'">
+          <span class="breadcrumb-separator">›</span>
+          <span class="breadcrumb-current">Statistics</span>
+        </template>
+        
+        <template v-if="currentView === 'leaderboard'">
+          <span class="breadcrumb-separator">›</span>
+          <span class="breadcrumb-current">Leaderboard</span>
+        </template>
+        
+        <template v-if="currentView === 'quiz-stats'">
+          <span class="breadcrumb-separator">›</span>
+          <span @click="goToStatsPage" class="breadcrumb-link">Statistics</span>
+          <span class="breadcrumb-separator">›</span>
+          <span class="breadcrumb-current">{{ selectedQuizStats?.quiz_name || 'Quiz Details' }}</span>
+        </template>
+      </div>
+    </div>
+
+    <div v-if="currentView === 'leaderboard'">
+      <LeaderboardView />
+    </div>
 
     <!-- Statistics Overview Page -->
     <div v-if="currentView === 'stats' && !quizStarted">
@@ -288,7 +331,6 @@ import { supabase } from './supabaseClient'
       </div>
     </div>
 
-    <!-- Quiz Selection (existing) -->
     <div v-if="currentView === 'quiz' && !quizStarted" class="quiz-selector">
       <h3>Select a Quiz from Database</h3>
       <div v-if="loadingQuizzes" class="loading">Loading quizzes...</div>
@@ -313,8 +355,8 @@ import { supabase } from './supabaseClient'
       </div>
     </div>
 
-    <!-- File Upload -->
-    <div v-if="!quizStarted">
+    <!-- File Upload (only for authenticated users) -->
+    <div v-if="currentUser && !quizStarted">
       <div class="divider">OR</div>
       <div class="file-upload">
         <input
@@ -342,6 +384,11 @@ import { supabase } from './supabaseClient'
           </button>
         </div>
       </div>
+    </div>
+
+    <!-- Guest mode notice -->
+    <div v-if="guestMode && !quizStarted" class="guest-notice">
+      <p>📝 You're browsing as a guest. <a href="#" @click="goToQuizPage(); guestMode = false">Log in</a> to upload quizzes and track your scores on the leaderboard.</p>
     </div>
 
     <!-- Quiz In Progress -->
@@ -475,8 +522,20 @@ import { supabase } from './supabaseClient'
 <script>
 export default {
   name: "App",
+  components: {
+    LoginForm,
+    LeaderboardView
+  },
   data() {
     return {
+      // Auth state
+      currentUser: null,
+      isLoginMode: true,
+      guestMode: false,
+
+      // View state
+      currentView: 'quiz', // 'quiz', 'leaderboard', 'stats'
+
       // Quiz selection
       availableQuizzes: [],
       selectedQuizId: "",
@@ -499,7 +558,6 @@ export default {
       uploadedQuizData: null,
 
       // Statistics view state
-      currentView: 'quiz', // 'quiz', 'stats', 'quiz-stats', 'question-detail'
       selectedStatsQuizId: null,
       allQuizStats: [],
       selectedQuizStats: null,
@@ -935,19 +993,37 @@ export default {
             (answer, index) => answer === this.correctAnswers[index]
           ).length;
           const totalQuestions = this.questions.length;
+
+          const submissionData = {
+            quiz_id: this.currentQuizId,
+            correct_answers: correctCount,
+            total_questions: totalQuestions
+          }
+          
+          // Add user_id if logged in
+          if (this.currentUser && this.currentUser.userId) {
+            submissionData.user_id = this.currentUser.userId
+            console.log('Saving submission with user_id:', this.currentUser.userId)
+          } else {
+            console.log('Saving submission without user_id (guest or not logged in)')
+          }
+
+          console.log('Submission data:', submissionData)
           
           // Insert submission record
-          const { error: submissionError } = await supabase
+          const { data: submissionResult, error: submissionError } = await supabase
             .from('submissions')
-            .insert({
-              quiz_id: this.currentQuizId,
-              correct_answers: correctCount,
-              total_questions: totalQuestions
-            });
+            .insert(submissionData)
+            .select();
           
           if (submissionError) {
-            console.error('Error saving submission:', submissionError);
-            this.error = 'Quiz completed, but failed to save submission statistics.';
+            console.error('Error saving submission:', submissionError)
+            this.error = 'Quiz completed, but failed to save submission: ' + submissionError.message
+          } else {
+            console.log('Submission saved successfully:', submissionResult)
+            if (this.currentUser) {
+              this.success = 'Your score has been recorded on the leaderboard!'
+            }
           }
           
           // Increment guess counts for each answer
@@ -1003,6 +1079,46 @@ export default {
       
       // Reload available quizzes to show any newly created ones
       this.loadAvailableQuizzes();
+    },
+
+    // Auth methods
+    handleLoginSuccess(user) {
+      console.log('Login successful:', user)
+      this.currentUser = {
+        userId: user.id,
+        username: user.username,
+        email: user.email,
+        fullName: user.full_name
+      }
+      this.guestMode = false  // Clear guest mode on login
+      setAuthToken(user)
+      this.success = `Welcome back, ${user.username}!`
+      setTimeout(() => { this.success = null }, 3000)
+    },
+    
+    handleLogout() {
+      clearAuthToken()
+      this.currentUser = null
+      this.guestMode = false
+      this.goToQuizPage()
+      this.success = 'Logged out successfully'
+      setTimeout(() => { this.success = null }, 3000)
+    },
+    
+    continueAsGuest() {
+      this.guestMode = true
+      this.success = 'Continuing as guest - you won\'t appear on leaderboards'
+      setTimeout(() => { this.success = null }, 3000)
+    },
+    
+    // Navigation methods
+    goToLeaderboard() {
+      if (this.quizStarted || this.quizCompleted) {
+        this.resetQuiz()
+      }
+      this.currentView = 'leaderboard'
+      this.error = null
+      this.success = null
     },
     
     // Statistics methods
@@ -1208,6 +1324,13 @@ export default {
     },
   },
   mounted() {
+    // Check if user is already logged in
+    const savedUser = getCurrentUser()
+    if (savedUser) {
+      this.currentUser = savedUser
+      console.log('User restored from token:', savedUser)
+    }
+
     // Load available quizzes from database
     this.loadAvailableQuizzes();
     
@@ -1228,6 +1351,160 @@ export default {
 </script>
 
 <style scoped>
+.header-modern {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+  overflow: hidden;
+}
+
+.header-top {
+  padding: 30px 30px 20px 30px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.brand-section h1 {
+  color: white;
+  margin: 0;
+  font-size: 2.5em;
+}
+
+.brand-section .subtitle {
+  color: rgba(255, 255, 255, 0.9);
+  margin: 5px 0 0 0;
+  font-size: 1.1em;
+}
+
+.header-bottom {
+  padding: 20px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.nav-section {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-nav {
+  padding: 10px 20px;
+  background: white;
+  border: none;
+  border-radius: 8px;
+  color: #667eea;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-nav:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.user-section {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  color: white;
+}
+
+.user-icon {
+  font-size: 18px;
+}
+
+.user-name {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.btn-logout {
+  padding: 8px 20px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #dc3545;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-logout:hover {
+  background: white;
+  transform: scale(1.05);
+}
+
+/* Guest Access Styles */
+.guest-access {
+  text-align: center;
+  margin: 30px 0;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 12px;
+}
+
+.guest-access p {
+  margin-bottom: 15px;
+  color: #6c757d;
+}
+
+.btn-guest {
+  padding: 12px 30px;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-guest:hover {
+  background: #5a6268;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3);
+}
+
+.guest-notice {
+  background: #fff3cd;
+  border-left: 4px solid #ffc107;
+  padding: 15px 20px;
+  margin-bottom: 20px;
+  border-radius: 4px;
+}
+
+.guest-notice p {
+  margin: 0;
+  color: #856404;
+}
+
+.guest-notice .link {
+  color: #667eea;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.guest-notice .link:hover {
+  color: #5568d3;
+}
+
 .quiz-name-input {
   margin-top: 15px;
   display: flex;
@@ -1776,11 +2053,19 @@ export default {
 }
 
 /* Success and Error Text Colors */
-.success-text {
-  color: #28a745 !important;
+.error {
+  color: #ef4444;
+  padding: 15px;
+  background: #fee;
+  border-radius: 8px;
+  margin-bottom: 20px;
 }
 
-.error-text {
-  color: #dc3545 !important;
+.success {
+  color: #10b981;
+  padding: 15px;
+  background: #d1fae5;
+  border-radius: 8px;
+  margin-bottom: 20px;
 }
 </style>
