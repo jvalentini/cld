@@ -1,35 +1,166 @@
+<script setup>
+/**
+ * Leaderboard view component
+ * Refactored to use Composition API
+ */
+
+import { ref, computed, onMounted } from 'vue'
+import { supabase } from '../supabaseClient.js'
+import { formatDate } from '../utils/formatters.js'
+import LoadingSpinner from './ui/LoadingSpinner.vue'
+import MessageAlert from './ui/MessageAlert.vue'
+
+// State
+const activeTab = ref('quiz')
+const quizLeaderboard = ref([])
+const userLeaderboard = ref([])
+const availableQuizzes = ref([])
+const selectedQuizId = ref('')
+const loading = ref(false)
+const error = ref(null)
+
+// Computed
+const displayedQuizLeaderboard = computed(() => {
+  if (!selectedQuizId.value) {
+    return quizLeaderboard.value.slice(0, 10)
+  }
+  return quizLeaderboard.value
+    .filter(e => e.quiz_id === parseInt(selectedQuizId.value))
+    .slice(0, 10)
+})
+
+// Methods
+async function loadLeaderboards() {
+  loading.value = true
+  error.value = null
+
+  try {
+    await Promise.all([
+      loadQuizLeaderboard(),
+      loadUserLeaderboard(),
+      loadAvailableQuizzes()
+    ])
+  } catch (err) {
+    console.error('Error loading leaderboards:', err)
+    error.value = `Failed to load leaderboards: ${err.message}`
+  } finally {
+    loading.value = false
+  }
+}
+
+async function loadQuizLeaderboard() {
+  try {
+    let query = supabase
+      .from('quiz_leaderboard')
+      .select('*')
+
+    if (selectedQuizId.value) {
+      query = query.eq('quiz_id', selectedQuizId.value)
+    }
+
+    const { data, error: fetchError } = await query.limit(100)
+
+    if (fetchError) throw fetchError
+
+    quizLeaderboard.value = data || []
+  } catch (err) {
+    console.error('Error loading quiz leaderboard:', err)
+    throw err
+  }
+}
+
+async function loadUserLeaderboard() {
+  try {
+    const { data, error: fetchError } = await supabase
+      .from('user_activity_leaderboard')
+      .select('*')
+      .limit(100)
+
+    if (fetchError) throw fetchError
+
+    userLeaderboard.value = data || []
+  } catch (err) {
+    console.error('Error loading user leaderboard:', err)
+    throw err
+  }
+}
+
+async function loadAvailableQuizzes() {
+  try {
+    const { data, error: fetchError } = await supabase
+      .from('quiz_statistics')
+      .select('quiz_id, quiz_name')
+      .order('quiz_name')
+
+    if (fetchError) throw fetchError
+
+    availableQuizzes.value = data || []
+  } catch (err) {
+    console.error('Error loading quizzes:', err)
+    throw err
+  }
+}
+
+function getRankClass(rank) {
+  if (rank === 1) return 'rank-gold'
+  if (rank === 2) return 'rank-silver'
+  if (rank === 3) return 'rank-bronze'
+  return ''
+}
+
+function getScoreClass(percentage) {
+  if (percentage >= 90) return 'score-excellent'
+  if (percentage >= 70) return 'score-good'
+  if (percentage >= 50) return 'score-ok'
+  return 'score-poor'
+}
+
+// Lifecycle
+onMounted(() => {
+  loadLeaderboards()
+})
+</script>
+
 <template>
   <div class="leaderboard-container">
     <h2>🏆 Leaderboards</h2>
-    
-    <div class="leaderboard-tabs">
-      <button 
-        class="tab-btn" 
+
+    <div class="leaderboard-tabs" role="tablist">
+      <button
+        class="tab-btn"
         :class="{ active: activeTab === 'quiz' }"
+        role="tab"
+        :aria-selected="activeTab === 'quiz'"
         @click="activeTab = 'quiz'"
       >
         Top Scores by Quiz
       </button>
-      <button 
-        class="tab-btn" 
+      <button
+        class="tab-btn"
         :class="{ active: activeTab === 'users' }"
+        role="tab"
+        :aria-selected="activeTab === 'users'"
         @click="activeTab = 'users'"
       >
         Most Active Users
       </button>
     </div>
-    
-    <div v-if="error" class="error">{{ error }}</div>
-    <div v-if="loading" class="loading">Loading leaderboards...</div>
-    
+
+    <MessageAlert v-if="error" :message="error" type="error" />
+    <LoadingSpinner v-if="loading" message="Loading leaderboards..." />
+
     <!-- Quiz Leaderboard Tab -->
-    <div v-if="activeTab === 'quiz' && !loading" class="leaderboard-content">
+    <div v-if="activeTab === 'quiz' && !loading" class="leaderboard-content" role="tabpanel">
       <div class="quiz-selector-section">
         <label for="quizSelect">Select Quiz:</label>
-        <select id="quizSelect" v-model="selectedQuizId" @change="loadQuizLeaderboard">
+        <select
+          id="quizSelect"
+          v-model="selectedQuizId"
+          @change="loadQuizLeaderboard"
+        >
           <option value="">-- All Quizzes --</option>
-          <option 
-            v-for="quiz in availableQuizzes" 
+          <option
+            v-for="quiz in availableQuizzes"
             :key="quiz.quiz_id"
             :value="quiz.quiz_id"
           >
@@ -37,11 +168,11 @@
           </option>
         </select>
       </div>
-      
-      <div v-if="quizLeaderboard.length === 0" class="no-data">
+
+      <div v-if="displayedQuizLeaderboard.length === 0" class="no-data">
         No submissions found for this quiz yet.
       </div>
-      
+
       <div v-else class="leaderboard-table">
         <table>
           <thead>
@@ -55,8 +186,8 @@
             </tr>
           </thead>
           <tbody>
-            <tr 
-              v-for="(entry, index) in displayedQuizLeaderboard" 
+            <tr
+              v-for="(entry, index) in displayedQuizLeaderboard"
               :key="`${entry.quiz_id}-${entry.user_id}-${entry.submitted_at}`"
               :class="getRankClass(entry.rank || index + 1)"
             >
@@ -76,7 +207,10 @@
                 {{ entry.correct_answers }} / {{ entry.total_questions }}
               </td>
               <td class="percentage-col">
-                <span class="percentage-badge" :class="getScoreClass(entry.score_percentage)">
+                <span
+                  class="percentage-badge"
+                  :class="getScoreClass(entry.score_percentage)"
+                >
                   {{ entry.score_percentage }}%
                 </span>
               </td>
@@ -88,13 +222,13 @@
         </table>
       </div>
     </div>
-    
+
     <!-- User Activity Leaderboard Tab -->
-    <div v-if="activeTab === 'users' && !loading" class="leaderboard-content">
+    <div v-if="activeTab === 'users' && !loading" class="leaderboard-content" role="tabpanel">
       <div v-if="userLeaderboard.length === 0" class="no-data">
         No user activity data available yet.
       </div>
-      
+
       <div v-else class="leaderboard-table">
         <table>
           <thead>
@@ -108,8 +242,8 @@
             </tr>
           </thead>
           <tbody>
-            <tr 
-              v-for="(user, index) in userLeaderboard" 
+            <tr
+              v-for="(user, index) in userLeaderboard"
               :key="user.user_id"
               :class="getRankClass(index + 1)"
             >
@@ -126,7 +260,10 @@
                 <span class="count-badge">{{ user.total_submissions }}</span>
               </td>
               <td class="avg-col">
-                <span class="percentage-badge" :class="getScoreClass(user.average_score)">
+                <span
+                  class="percentage-badge"
+                  :class="getScoreClass(user.average_score)"
+                >
                   {{ user.average_score }}%
                 </span>
               </td>
@@ -143,134 +280,6 @@
     </div>
   </div>
 </template>
-
-<script>
-import { supabase } from '../supabaseClient'
-
-export default {
-  name: 'LeaderboardView',
-  data() {
-    return {
-      activeTab: 'quiz', // 'quiz' or 'users'
-      quizLeaderboard: [],
-      userLeaderboard: [],
-      availableQuizzes: [],
-      selectedQuizId: '',
-      loading: false,
-      error: null
-    }
-  },
-  computed: {
-    displayedQuizLeaderboard() {
-      if (!this.selectedQuizId) {
-        // Show top 10 across all quizzes
-        return this.quizLeaderboard.slice(0, 10)
-      }
-      // Show top 10 for selected quiz
-      return this.quizLeaderboard.filter(e => e.quiz_id === parseInt(this.selectedQuizId)).slice(0, 10)
-    }
-  },
-  mounted() {
-    this.loadLeaderboards()
-  },
-  methods: {
-    async loadLeaderboards() {
-      this.loading = true
-      this.error = null
-      
-      try {
-        await Promise.all([
-          this.loadQuizLeaderboard(),
-          this.loadUserLeaderboard(),
-          this.loadAvailableQuizzes()
-        ])
-      } catch (err) {
-        console.error('Error loading leaderboards:', err)
-        this.error = `Failed to load leaderboards: ${err.message}`
-      } finally {
-        this.loading = false
-      }
-    },
-    
-    async loadQuizLeaderboard() {
-      try {
-        let query = supabase
-          .from('quiz_leaderboard')
-          .select('*')
-        
-        if (this.selectedQuizId) {
-          query = query.eq('quiz_id', this.selectedQuizId)
-        }
-        
-        const { data, error } = await query.limit(100)
-        
-        if (error) throw error
-        
-        this.quizLeaderboard = data || []
-      } catch (err) {
-        console.error('Error loading quiz leaderboard:', err)
-        throw err
-      }
-    },
-    
-    async loadUserLeaderboard() {
-      try {
-        const { data, error } = await supabase
-          .from('user_activity_leaderboard')
-          .select('*')
-          .limit(100)
-        
-        if (error) throw error
-        
-        this.userLeaderboard = data || []
-      } catch (err) {
-        console.error('Error loading user leaderboard:', err)
-        throw err
-      }
-    },
-    
-    async loadAvailableQuizzes() {
-      try {
-        const { data, error } = await supabase
-          .from('quiz_statistics')
-          .select('quiz_id, quiz_name')
-          .order('quiz_name')
-        
-        if (error) throw error
-        
-        this.availableQuizzes = data || []
-      } catch (err) {
-        console.error('Error loading quizzes:', err)
-        throw err
-      }
-    },
-    
-    formatDate(dateString) {
-      if (!dateString) return 'N/A'
-      const date = new Date(dateString)
-      return date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-      })
-    },
-    
-    getRankClass(rank) {
-      if (rank === 1) return 'rank-gold'
-      if (rank === 2) return 'rank-silver'
-      if (rank === 3) return 'rank-bronze'
-      return ''
-    },
-    
-    getScoreClass(percentage) {
-      if (percentage >= 90) return 'score-excellent'
-      if (percentage >= 70) return 'score-good'
-      if (percentage >= 50) return 'score-ok'
-      return 'score-poor'
-    }
-  }
-}
-</script>
 
 <style scoped>
 .leaderboard-container {
@@ -449,7 +458,9 @@ tbody tr:last-child td {
 }
 
 /* Score columns */
-.score-col, .count-col, .avg-col {
+.score-col,
+.count-col,
+.avg-col {
   text-align: center;
   font-weight: 600;
   color: #495057;
@@ -507,21 +518,6 @@ tbody tr:last-child td {
 }
 
 /* States */
-.loading {
-  text-align: center;
-  padding: 60px 20px;
-  color: #6c757d;
-  font-size: 18px;
-}
-
-.error {
-  color: #ef4444;
-  padding: 15px;
-  background: #fee;
-  border-radius: 8px;
-  margin-bottom: 20px;
-}
-
 .no-data {
   text-align: center;
   padding: 60px 20px;
@@ -537,28 +533,29 @@ tbody tr:last-child td {
   .leaderboard-tabs {
     flex-direction: column;
   }
-  
+
   .tab-btn {
     width: 100%;
   }
-  
+
   .quiz-selector-section {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .quiz-selector-section select {
     max-width: 100%;
   }
-  
+
   table {
     font-size: 13px;
   }
-  
-  th, td {
+
+  th,
+  td {
     padding: 10px 6px;
   }
-  
+
   .rank-badge {
     width: 32px;
     height: 32px;
