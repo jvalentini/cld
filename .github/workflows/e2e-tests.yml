@@ -63,6 +63,7 @@ jobs:
           name: test-results
           path: quiz-app/test-results/
           retention-days: 30
+          if-no-files-found: ignore
 
   e2e-tests-multi-browser:
     name: Multi-Browser E2E Tests
