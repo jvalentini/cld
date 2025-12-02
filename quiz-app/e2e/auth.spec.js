@@ -3,7 +3,7 @@
  * Tests login, signup, and auth-related flows
  */
 
-import { test, expect, testUser } from './fixtures/test-fixtures.js'
+import { test, expect } from './fixtures/test-fixtures.js'
 
 test.describe('Authentication - Login Form', () => {
   test.beforeEach(async ({ quizPage }) => {
@@ -96,7 +96,7 @@ test.describe('Authentication - Login Validation', () => {
     await quizPage.waitForAppLoad()
   })
 
-  test('should show error for empty username', async ({ quizPage, page }) => {
+  test('should show error for empty username', async ({ quizPage }) => {
     // Form has required fields - browser validation will prevent submission
     // Just verify the form stays on login view
     await quizPage.passwordInput.fill('somepassword')
@@ -108,7 +108,7 @@ test.describe('Authentication - Login Validation', () => {
     await expect(quizPage.authCard).toBeVisible()
   })
 
-  test('should show error for empty password', async ({ quizPage, page }) => {
+  test('should show error for empty password', async ({ quizPage }) => {
     // Form has required fields - browser validation will prevent submission
     await quizPage.usernameInput.fill('testuser')
     
@@ -158,7 +158,7 @@ test.describe('Authentication - Session Persistence', () => {
 })
 
 test.describe('Authentication - Sign Up Form', () => {
-  test.beforeEach(async ({ quizPage, page }) => {
+  test.beforeEach(async ({ quizPage }) => {
     await quizPage.goto()
     await quizPage.waitForAppLoad()
   })

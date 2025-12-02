@@ -3,7 +3,7 @@
  * Tests core functionality and user flows
  */
 
-import { test, expect, sampleQuiz, correctAnswers } from './fixtures/test-fixtures.js'
+import { test, expect } from './fixtures/test-fixtures.js'
 
 test.describe('Quiz App - Initial Load', () => {
   test('should display the app header', async ({ quizPage }) => {
@@ -342,7 +342,7 @@ test.describe('Quiz App - Responsive Design', () => {
 })
 
 test.describe('Quiz App - Error Handling', () => {
-  test('should handle network errors gracefully', async ({ page, quizPage }) => {
+  test('should handle network errors gracefully', async ({ quizPage }) => {
     await quizPage.goto()
     await quizPage.waitForAppLoad()
     

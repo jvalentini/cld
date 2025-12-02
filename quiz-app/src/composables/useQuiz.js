@@ -336,7 +336,7 @@ export function useQuiz() {
       answerIds.value = results.map(r => r.answers.map(a => a.id))
 
       // Set correct answers from JSON if available
-      correctAnswers.value = questions.value.map((q, idx) => {
+      correctAnswers.value = questions.value.map(q => {
         if (q.correct_answer !== undefined) {
           return q.correct_answer
         }
@@ -533,7 +533,7 @@ export function useQuiz() {
     if (saved) {
       try {
         return JSON.parse(saved)
-      } catch (e) {
+      } catch {
         return null
       }
     }

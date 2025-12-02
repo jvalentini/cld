@@ -3,7 +3,7 @@
  * Tests quiz selection, switching between quizzes, and different quiz types
  */
 
-import { test, expect, allQuizzes, getQuizByName, getCorrectAnswersForQuiz } from './fixtures/test-fixtures.js'
+import { test, expect } from './fixtures/test-fixtures.js'
 
 test.describe('Multiple Quizzes - Selection and Switching', () => {
   test.beforeEach(async ({ quizPage }) => {

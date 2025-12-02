@@ -4,7 +4,7 @@
  * Refactored to use Composition API and composables
  */
 
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useAuth, useNavigation, useQuiz, useStatistics } from './composables'
 import { VIEWS } from './utils/constants.js'
 import { getCorrectRateClass } from './utils/questionTypes.js'
