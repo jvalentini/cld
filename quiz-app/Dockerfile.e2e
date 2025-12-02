@@ -1,7 +1,7 @@
 # Dockerfile for running Playwright e2e tests
 # This image includes browsers and all dependencies needed for headless testing
 
-FROM mcr.microsoft.com/playwright:v1.49.0-noble
+FROM mcr.microsoft.com/playwright:v1.57.0-noble
 
 # Set working directory
 WORKDIR /app
