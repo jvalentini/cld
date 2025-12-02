@@ -9,9 +9,7 @@ const emit = defineEmits(['continue-as-guest'])
 <template>
   <div class="guest-access">
     <p>Or continue as guest (limited features)</p>
-    <button class="btn-secondary" @click="emit('continue-as-guest')">
-      Continue as Guest
-    </button>
+    <button class="btn-secondary" @click="emit('continue-as-guest')">Continue as Guest</button>
   </div>
 </template>
 
@@ -46,4 +44,3 @@ const emit = defineEmits(['continue-as-guest'])
   box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3);
 }
 </style>
-

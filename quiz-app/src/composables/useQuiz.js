@@ -6,11 +6,11 @@
 import { ref, computed } from 'vue'
 import { supabase } from '../supabaseClient.js'
 import { STORAGE_KEYS, QUESTION_TYPES } from '../utils/constants.js'
-import { 
-  getAnswerLabel as getLabel, 
+import {
+  getAnswerLabel as getLabel,
   calculateScoreByType,
   detectQuestionType,
-  validateQuestion
+  validateQuestion,
 } from '../utils/questionTypes.js'
 
 // Shared reactive state
@@ -54,9 +54,8 @@ export function useQuiz() {
   })
 
   const score = computed(() => {
-    return userAnswers.value.filter(
-      (answer, index) => answer === correctAnswers.value[index]
-    ).length
+    return userAnswers.value.filter((answer, index) => answer === correctAnswers.value[index])
+      .length
   })
 
   const scorePercentage = computed(() => {
@@ -87,7 +86,7 @@ export function useQuiz() {
   const hasSelectedAnswer = computed(() => userAnswers.value[currentQuestionIndex.value] !== null)
 
   // Methods
-  
+
   /**
    * Load available quizzes from database
    */
@@ -107,7 +106,8 @@ export function useQuiz() {
       console.log('Loaded quizzes:', data.length)
     } catch (err) {
       console.error('Error loading quizzes:', err)
-      quizError.value = 'Failed to load quizzes from database. Please check your Supabase connection.'
+      quizError.value =
+        'Failed to load quizzes from database. Please check your Supabase connection.'
     } finally {
       loadingQuizzes.value = false
     }
@@ -148,7 +148,10 @@ export function useQuiz() {
       const { data: answersData, error: aError } = await supabase
         .from('answers')
         .select('id, question_id, answer_text, answer_label')
-        .in('question_id', questionsData.map(q => q.id))
+        .in(
+          'question_id',
+          questionsData.map(q => q.id)
+        )
         .order('answer_label')
 
       if (aError) throw aError
@@ -169,7 +172,7 @@ export function useQuiz() {
       questions.value = questionsData.map(q => ({
         question: q.question_text,
         answers: answersByQuestion[q.id] || [],
-        type: q.question_type
+        type: q.question_type,
       }))
 
       questionIds.value = questionsData.map(q => q.id)
@@ -201,12 +204,12 @@ export function useQuiz() {
     console.log('Loading file:', file.name)
     const reader = new FileReader()
 
-    reader.onerror = (e) => {
+    reader.onerror = e => {
       console.error('FileReader error:', e)
       quizError.value = 'Failed to read the file.'
     }
 
-    reader.onload = async (e) => {
+    reader.onload = async e => {
       try {
         console.log('File content:', e.target.result)
         const data = JSON.parse(e.target.result)
@@ -232,7 +235,8 @@ export function useQuiz() {
         uploadedQuizData.value = data
         uploadedQuizName.value = file.name.replace('.json', '')
         quizError.value = null
-        quizSuccess.value = "Quiz loaded! Enter a name and click 'Save Quiz to Database' to save it."
+        quizSuccess.value =
+          "Quiz loaded! Enter a name and click 'Save Quiz to Database' to save it."
       } catch (err) {
         console.error('Parse error:', err)
         quizError.value = `Failed to load quiz file: ${err.message}`
@@ -260,7 +264,7 @@ export function useQuiz() {
         .from('quizzes')
         .insert({
           name: uploadedQuizName.value,
-          description: 'Uploaded from JSON file'
+          description: 'Uploaded from JSON file',
         })
         .select()
         .single()
@@ -278,7 +282,7 @@ export function useQuiz() {
             quiz_id: quizId,
             question_text: q.question,
             question_type: q.type,
-            order_index: index + 1
+            order_index: index + 1,
           })
           .select()
           .single()
@@ -286,10 +290,8 @@ export function useQuiz() {
         if (qError) throw qError
 
         // Insert answers
-        const labels = q.type === QUESTION_TYPES.TRUE_FALSE 
-          ? ['T', 'F'] 
-          : ['A', 'B', 'C', 'D']
-        
+        const labels = q.type === QUESTION_TYPES.TRUE_FALSE ? ['T', 'F'] : ['A', 'B', 'C', 'D']
+
         const answerPromises = q.answers.map(async (ans, ansIndex) => {
           const { data, error } = await supabase
             .from('answers')
@@ -297,7 +299,7 @@ export function useQuiz() {
               question_id: question.id,
               answer_text: ans,
               answer_label: labels[ansIndex],
-              guesses: 0
+              guesses: 0,
             })
             .select()
             .single()
@@ -342,7 +344,7 @@ export function useQuiz() {
       })
 
       quizSuccess.value = `Quiz "${uploadedQuizName.value}" saved to database successfully with ${results.length} questions!`
-      
+
       initializeQuiz()
       await loadAvailableQuizzes()
     } catch (err) {
@@ -427,7 +429,7 @@ export function useQuiz() {
         const submissionData = {
           quiz_id: currentQuizId.value,
           correct_answers: correctCount,
-          total_questions: totalQuestions
+          total_questions: totalQuestions,
         }
 
         if (currentUser?.userId) {
@@ -446,7 +448,8 @@ export function useQuiz() {
 
         if (submissionError) {
           console.error('Error saving submission:', submissionError)
-          quizError.value = 'Quiz completed, but failed to save submission: ' + submissionError.message
+          quizError.value =
+            'Quiz completed, but failed to save submission: ' + submissionError.message
         } else {
           console.log('Submission saved successfully:', submissionResult)
           if (currentUser) {
@@ -474,8 +477,9 @@ export function useQuiz() {
       if (answerIndex !== null && answerIds.value[i]?.[answerIndex]) {
         const answerId = answerIds.value[i][answerIndex]
 
-        const { error: guessError } = await supabase
-          .rpc('increment_answer_guess', { answer_id: answerId })
+        const { error: guessError } = await supabase.rpc('increment_answer_guess', {
+          answer_id: answerId,
+        })
 
         if (guessError) {
           console.error('Error incrementing guess for answer:', answerId, guessError)
@@ -515,7 +519,7 @@ export function useQuiz() {
       questions: questions.value,
       userAnswers: userAnswers.value,
       currentQuestionIndex: currentQuestionIndex.value,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     }
     localStorage.setItem(STORAGE_KEYS.QUIZ_PROGRESS, JSON.stringify(progress))
   }
@@ -560,9 +564,7 @@ export function useQuiz() {
    * @returns {string} - Answer label
    */
   function getAnswerLabelForResult(question, qIndex, useCorrect = false) {
-    const answerIndex = useCorrect
-      ? correctAnswers.value[qIndex]
-      : userAnswers.value[qIndex]
+    const answerIndex = useCorrect ? correctAnswers.value[qIndex] : userAnswers.value[qIndex]
     return getLabel(answerIndex, question)
   }
 
@@ -593,7 +595,7 @@ export function useQuiz() {
     uploadedQuizData,
     quizError,
     quizSuccess,
-    
+
     // Computed
     currentQuestion,
     progressPercentage,
@@ -604,7 +606,7 @@ export function useQuiz() {
     isFirstQuestion,
     isLastQuestion,
     hasSelectedAnswer,
-    
+
     // Methods
     loadAvailableQuizzes,
     loadQuizFromDatabase,
@@ -621,7 +623,6 @@ export function useQuiz() {
     clearProgress,
     getAnswerLabel,
     getAnswerLabelForResult,
-    clearMessages
+    clearMessages,
   }
 }
-

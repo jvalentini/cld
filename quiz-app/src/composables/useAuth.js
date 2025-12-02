@@ -5,7 +5,13 @@
 
 import { ref, computed } from 'vue'
 import { supabase } from '../supabaseClient.js'
-import { hashPassword, comparePassword, setAuthToken, clearAuthToken, getCurrentUser } from '../auth.js'
+import {
+  hashPassword,
+  comparePassword,
+  setAuthToken,
+  clearAuthToken,
+  getCurrentUser,
+} from '../auth.js'
 import { MESSAGE_TIMEOUT } from '../utils/constants.js'
 
 // Shared reactive state (singleton pattern)
@@ -51,7 +57,7 @@ export function useAuth() {
       userId: user.id,
       username: user.username,
       email: user.email,
-      fullName: user.full_name
+      fullName: user.full_name,
     }
     guestMode.value = false
     setAuthToken(user)
@@ -97,7 +103,9 @@ export function useAuth() {
   function setErrorMessage(message) {
     authError.value = message
     if (message) {
-      setTimeout(() => { authError.value = null }, MESSAGE_TIMEOUT * 2)
+      setTimeout(() => {
+        authError.value = null
+      }, MESSAGE_TIMEOUT * 2)
     }
   }
 
@@ -108,7 +116,9 @@ export function useAuth() {
   function setSuccessMessage(message) {
     authSuccess.value = message
     if (message) {
-      setTimeout(() => { authSuccess.value = null }, MESSAGE_TIMEOUT)
+      setTimeout(() => {
+        authSuccess.value = null
+      }, MESSAGE_TIMEOUT)
     }
   }
 
@@ -208,7 +218,7 @@ export function useAuth() {
           username: formData.username,
           email: formData.email,
           password_hash: passwordHash,
-          full_name: formData.fullName
+          full_name: formData.fullName,
         })
         .select()
         .single()
@@ -216,7 +226,7 @@ export function useAuth() {
       if (insertError) throw insertError
 
       setSuccessMessage('Account created successfully! Logging you in...')
-      
+
       // Auto-login after signup
       setTimeout(() => {
         handleLoginSuccess(newUser)
@@ -240,13 +250,13 @@ export function useAuth() {
     authError,
     authSuccess,
     authLoading,
-    
+
     // Computed
     isAuthenticated,
     isGuest,
     canAccessFeatures,
     displayName,
-    
+
     // Methods
     initializeAuth,
     handleLoginSuccess,
@@ -258,7 +268,6 @@ export function useAuth() {
     setSuccessMessage,
     clearMessages,
     login,
-    signup
+    signup,
   }
 }
-

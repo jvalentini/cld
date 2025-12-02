@@ -6,16 +6,16 @@
 defineProps({
   isFirstQuestion: {
     type: Boolean,
-    required: true
+    required: true,
   },
   isLastQuestion: {
     type: Boolean,
-    required: true
+    required: true,
   },
   canProceed: {
     type: Boolean,
-    required: true
-  }
+    required: true,
+  },
 })
 
 const emit = defineEmits(['previous', 'next', 'finish'])
@@ -23,27 +23,18 @@ const emit = defineEmits(['previous', 'next', 'finish'])
 
 <template>
   <div class="navigation">
-    <button
-      class="btn-secondary"
-      @click="emit('previous')"
-      :disabled="isFirstQuestion"
-    >
+    <button class="btn-secondary" :disabled="isFirstQuestion" @click="emit('previous')">
       ← Previous
     </button>
     <button
       v-if="!isLastQuestion"
       class="btn-primary"
-      @click="emit('next')"
       :disabled="!canProceed"
+      @click="emit('next')"
     >
       Next →
     </button>
-    <button
-      v-else
-      class="btn-primary"
-      @click="emit('finish')"
-      :disabled="!canProceed"
-    >
+    <button v-else class="btn-primary" :disabled="!canProceed" @click="emit('finish')">
       Finish Quiz
     </button>
   </div>
@@ -91,4 +82,3 @@ button:disabled {
   cursor: not-allowed;
 }
 </style>
-

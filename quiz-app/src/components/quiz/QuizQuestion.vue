@@ -4,25 +4,29 @@
  */
 
 import { computed } from 'vue'
-import { getQuestionTypeLabel, getQuestionTypeBadgeClass, getAnswerLabel } from '../../utils/questionTypes.js'
+import {
+  getQuestionTypeLabel,
+  getQuestionTypeBadgeClass,
+  getAnswerLabel,
+} from '../../utils/questionTypes.js'
 
 const props = defineProps({
   question: {
     type: Object,
-    required: true
+    required: true,
   },
   questionIndex: {
     type: Number,
-    required: true
+    required: true,
   },
   totalQuestions: {
     type: Number,
-    required: true
+    required: true,
   },
   selectedAnswer: {
     type: Number,
-    default: null
-  }
+    default: null,
+  },
 })
 
 const emit = defineEmits(['select-answer'])
@@ -40,12 +44,14 @@ function getLabel(index) {
     <span class="question-type-badge" :class="badgeClass">
       {{ typeLabel }}
     </span>
-    <div class="question-number">
-      Question {{ questionIndex + 1 }}
-    </div>
+    <div class="question-number">Question {{ questionIndex + 1 }}</div>
     <div class="question-text">{{ question.question }}</div>
 
-    <div class="answers" role="radiogroup" :aria-label="`Answers for question ${questionIndex + 1}`">
+    <div
+      class="answers"
+      role="radiogroup"
+      :aria-label="`Answers for question ${questionIndex + 1}`"
+    >
       <div
         v-for="(answer, index) in question.answers"
         :key="index"
@@ -166,4 +172,3 @@ function getLabel(index) {
   color: #333;
 }
 </style>
-

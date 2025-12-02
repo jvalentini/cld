@@ -41,4 +41,3 @@ const emit = defineEmits(['login'])
   color: #5568d3;
 }
 </style>
-

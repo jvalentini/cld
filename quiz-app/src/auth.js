@@ -29,13 +29,16 @@ export async function comparePassword(password, hash) {
  * @param {object} user - User object
  */
 export function setAuthToken(user) {
-  localStorage.setItem('quiz_auth', JSON.stringify({
-    userId: user.id,
-    username: user.username,
-    fullName: user.full_name,
-    email: user.email,
-    timestamp: Date.now()
-  }))
+  localStorage.setItem(
+    'quiz_auth',
+    JSON.stringify({
+      userId: user.id,
+      username: user.username,
+      fullName: user.full_name,
+      email: user.email,
+      timestamp: Date.now(),
+    })
+  )
 }
 
 /**
@@ -45,7 +48,7 @@ export function setAuthToken(user) {
 export function getAuthToken() {
   const data = localStorage.getItem('quiz_auth')
   if (!data) return null
-  
+
   try {
     const auth = JSON.parse(data)
     // Check if token is less than 7 days old

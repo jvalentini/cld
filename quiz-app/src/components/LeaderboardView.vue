@@ -35,11 +35,7 @@ async function loadLeaderboards() {
   error.value = null
 
   try {
-    await Promise.all([
-      loadQuizLeaderboard(),
-      loadUserLeaderboard(),
-      loadAvailableQuizzes()
-    ])
+    await Promise.all([loadQuizLeaderboard(), loadUserLeaderboard(), loadAvailableQuizzes()])
   } catch (err) {
     console.error('Error loading leaderboards:', err)
     error.value = `Failed to load leaderboards: ${err.message}`
@@ -50,9 +46,7 @@ async function loadLeaderboards() {
 
 async function loadQuizLeaderboard() {
   try {
-    let query = supabase
-      .from('quiz_leaderboard')
-      .select('*')
+    let query = supabase.from('quiz_leaderboard').select('*')
 
     if (selectedQuizId.value) {
       query = query.eq('quiz_id', selectedQuizId.value)
@@ -153,17 +147,9 @@ onMounted(() => {
     <div v-if="activeTab === 'quiz' && !loading" class="leaderboard-content" role="tabpanel">
       <div class="quiz-selector-section">
         <label for="quizSelect">Select Quiz:</label>
-        <select
-          id="quizSelect"
-          v-model="selectedQuizId"
-          @change="loadQuizLeaderboard"
-        >
+        <select id="quizSelect" v-model="selectedQuizId" @change="loadQuizLeaderboard">
           <option value="">-- All Quizzes --</option>
-          <option
-            v-for="quiz in availableQuizzes"
-            :key="quiz.quiz_id"
-            :value="quiz.quiz_id"
-          >
+          <option v-for="quiz in availableQuizzes" :key="quiz.quiz_id" :value="quiz.quiz_id">
             {{ quiz.quiz_name }}
           </option>
         </select>
@@ -203,14 +189,9 @@ onMounted(() => {
               <td v-if="!selectedQuizId" class="quiz-col">
                 {{ entry.quiz_name }}
               </td>
-              <td class="score-col">
-                {{ entry.correct_answers }} / {{ entry.total_questions }}
-              </td>
+              <td class="score-col">{{ entry.correct_answers }} / {{ entry.total_questions }}</td>
               <td class="percentage-col">
-                <span
-                  class="percentage-badge"
-                  :class="getScoreClass(entry.score_percentage)"
-                >
+                <span class="percentage-badge" :class="getScoreClass(entry.score_percentage)">
                   {{ entry.score_percentage }}%
                 </span>
               </td>
@@ -260,16 +241,11 @@ onMounted(() => {
                 <span class="count-badge">{{ user.total_submissions }}</span>
               </td>
               <td class="avg-col">
-                <span
-                  class="percentage-badge"
-                  :class="getScoreClass(user.average_score)"
-                >
+                <span class="percentage-badge" :class="getScoreClass(user.average_score)">
                   {{ user.average_score }}%
                 </span>
               </td>
-              <td class="score-col">
-                {{ user.highest_score }}%
-              </td>
+              <td class="score-col">{{ user.highest_score }}%</td>
               <td class="date-col">
                 {{ formatDate(user.last_submission) }}
               </td>

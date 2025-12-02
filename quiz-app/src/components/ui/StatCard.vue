@@ -6,16 +6,16 @@
 defineProps({
   value: {
     type: [String, Number],
-    required: true
+    required: true,
   },
   label: {
     type: String,
-    required: true
+    required: true,
   },
   valueClass: {
     type: String,
-    default: ''
-  }
+    default: '',
+  },
 })
 </script>
 
@@ -74,4 +74,3 @@ defineProps({
   letter-spacing: 1px;
 }
 </style>
-

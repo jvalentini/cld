@@ -70,11 +70,7 @@ export function getCorrectRateClass(percentage) {
  * @returns {string} - Question type
  */
 export function detectQuestionType(answers) {
-  if (
-    answers.length === 2 &&
-    answers.includes('True') &&
-    answers.includes('False')
-  ) {
+  if (answers.length === 2 && answers.includes('True') && answers.includes('False')) {
     return QUESTION_TYPES.TRUE_FALSE
   }
   return QUESTION_TYPES.MULTIPLE_CHOICE
@@ -90,7 +86,7 @@ export function validateQuestion(question, index) {
   if (!question || !question.question || !Array.isArray(question.answers)) {
     return {
       valid: false,
-      error: `Question ${index + 1} has invalid structure`
+      error: `Question ${index + 1} has invalid structure`,
     }
   }
 
@@ -99,14 +95,14 @@ export function validateQuestion(question, index) {
   if (type === QUESTION_TYPES.MULTIPLE_CHOICE && question.answers.length !== 4) {
     return {
       valid: false,
-      error: `Multiple choice question ${index + 1} must have exactly 4 answers`
+      error: `Multiple choice question ${index + 1} must have exactly 4 answers`,
     }
   }
 
   if (type === QUESTION_TYPES.TRUE_FALSE && question.answers.length !== 2) {
     return {
       valid: false,
-      error: `True/False question ${index + 1} must have exactly 2 answers`
+      error: `True/False question ${index + 1} must have exactly 2 answers`,
     }
   }
 
@@ -136,4 +132,3 @@ export function calculateScoreByType(questions, userAnswers, correctAnswers, typ
 
   return { total, correct }
 }
-

@@ -10,13 +10,33 @@ import { VIEWS } from './utils/constants.js'
 import { getCorrectRateClass } from './utils/questionTypes.js'
 
 // UI Components
-import { AppHeader, AppBreadcrumb, MessageAlert, LoadingSpinner, StatCard, ProgressBar } from './components/ui'
+import {
+  AppHeader,
+  AppBreadcrumb,
+  MessageAlert,
+  LoadingSpinner,
+  StatCard,
+  ProgressBar,
+} from './components/ui'
 
 // Quiz Components
-import { QuizSelector, QuizUpload, QuizQuestion, QuizNavigation, QuizResults, GuestNotice, GuestAccess } from './components/quiz'
+import {
+  QuizSelector,
+  QuizUpload,
+  QuizQuestion,
+  QuizNavigation,
+  QuizResults,
+  GuestNotice,
+  GuestAccess,
+} from './components/quiz'
 
 // Stats Components
-import { StatsOverview, QuizStatsList, QuestionStatsList, AnswerBreakdown } from './components/stats'
+import {
+  StatsOverview,
+  QuizStatsList,
+  QuestionStatsList,
+  AnswerBreakdown,
+} from './components/stats'
 
 // Auth Components
 import LoginForm from './components/LoginForm.vue'
@@ -33,7 +53,11 @@ const isLoginMode = ref(true)
 
 // Computed properties
 const showQuizNav = computed(() => {
-  return navigation.currentView.value !== VIEWS.QUIZ || quiz.quizStarted.value || quiz.quizCompleted.value
+  return (
+    navigation.currentView.value !== VIEWS.QUIZ ||
+    quiz.quizStarted.value ||
+    quiz.quizCompleted.value
+  )
 })
 
 const showLeaderboardNav = computed(() => {
@@ -45,14 +69,18 @@ const showStatsNav = computed(() => {
 })
 
 const showBreadcrumb = computed(() => {
-  return (auth.canAccessFeatures.value) && 
-    (navigation.currentView.value !== VIEWS.QUIZ || quiz.quizStarted.value || quiz.quizCompleted.value)
+  return (
+    auth.canAccessFeatures.value &&
+    (navigation.currentView.value !== VIEWS.QUIZ ||
+      quiz.quizStarted.value ||
+      quiz.quizCompleted.value)
+  )
 })
 
 const breadcrumbItems = computed(() => {
   return navigation.getBreadcrumbs({
     quizName: quiz.currentQuizName.value,
-    selectedQuizStats: statistics.selectedQuizStats.value
+    selectedQuizStats: statistics.selectedQuizStats.value,
   })
 })
 
@@ -155,7 +183,7 @@ function handleGuestLogin() {
 onMounted(() => {
   auth.initializeAuth()
   quiz.loadAvailableQuizzes()
-  
+
   // Check for saved progress
   const savedProgress = quiz.loadProgress()
   if (savedProgress && savedProgress.questions?.length > 0) {
@@ -195,15 +223,12 @@ onMounted(() => {
         @login-success="handleLoginSuccess"
         @toggle-mode="handleToggleAuthMode"
       />
-      
+
       <GuestAccess @continue-as-guest="handleContinueAsGuest" />
     </div>
 
     <!-- Breadcrumb (shown when logged in or guest) -->
-    <AppBreadcrumb 
-      v-if="showBreadcrumb"
-      :items="breadcrumbItems" 
-    />
+    <AppBreadcrumb v-if="showBreadcrumb" :items="breadcrumbItems" />
 
     <!-- Leaderboard View -->
     <LeaderboardView v-if="navigation.isLeaderboardView.value" />
@@ -211,53 +236,50 @@ onMounted(() => {
     <!-- Statistics Overview Page -->
     <div v-if="navigation.isStatsView.value && !quiz.quizStarted.value">
       <h2>📊 Quiz Statistics</h2>
-      
+
       <LoadingSpinner v-if="statistics.loadingStats.value" message="Loading statistics..." />
-      
+
       <template v-else>
         <StatsOverview
           :total-quizzes="statistics.allQuizStats.value.length"
           :total-submissions="statistics.totalSubmissions.value"
           :average-score="statistics.overallAverageScore.value"
         />
-        
-        <QuizStatsList
-          :quizzes="statistics.allQuizStats.value"
-          @view-quiz="handleViewQuizStats"
-        />
+
+        <QuizStatsList :quizzes="statistics.allQuizStats.value" @view-quiz="handleViewQuizStats" />
       </template>
     </div>
 
     <!-- Individual Quiz Statistics Page -->
     <div v-if="navigation.isQuizStatsView.value && !quiz.quizStarted.value">
       <LoadingSpinner v-if="statistics.loadingStats.value" message="Loading quiz statistics..." />
-      
+
       <template v-else-if="statistics.selectedQuizStats.value">
         <h2>{{ statistics.selectedQuizStats.value.quiz_name }}</h2>
-        
+
         <!-- Quiz Overview Stats -->
         <div class="stats-overview">
           <h3>Quiz Overview</h3>
           <div class="stats-grid">
-            <StatCard 
-              :value="statistics.selectedQuizStats.value.total_questions || 0" 
-              label="Total Questions" 
+            <StatCard
+              :value="statistics.selectedQuizStats.value.total_questions || 0"
+              label="Total Questions"
             />
-            <StatCard 
-              :value="statistics.selectedQuizStats.value.total_submissions || 0" 
-              label="Submissions" 
+            <StatCard
+              :value="statistics.selectedQuizStats.value.total_submissions || 0"
+              label="Submissions"
             />
-            <StatCard 
-              :value="`${statistics.selectedQuizStats.value.average_score || 0}%`" 
-              label="Average Score" 
+            <StatCard
+              :value="`${statistics.selectedQuizStats.value.average_score || 0}%`"
+              label="Average Score"
             />
-            <StatCard 
-              :value="`${statistics.selectedQuizStats.value.highest_score || 0}%`" 
-              label="Highest Score" 
+            <StatCard
+              :value="`${statistics.selectedQuizStats.value.highest_score || 0}%`"
+              label="Highest Score"
             />
-            <StatCard 
-              :value="`${statistics.selectedQuizStats.value.lowest_score || 0}%`" 
-              label="Lowest Score" 
+            <StatCard
+              :value="`${statistics.selectedQuizStats.value.lowest_score || 0}%`"
+              label="Lowest Score"
             />
           </div>
         </div>
@@ -272,32 +294,37 @@ onMounted(() => {
     <!-- Question Detail View -->
     <div v-if="navigation.isQuestionDetailView.value">
       <LoadingSpinner v-if="statistics.loadingStats.value" message="Loading answer statistics..." />
-      
+
       <template v-else-if="statistics.selectedQuestionStats.value">
         <h2>{{ statistics.selectedQuestionStats.value.question_text }}</h2>
-        
+
         <!-- Question Overview Stats -->
         <div class="stats-overview">
           <h3>Overall Performance</h3>
           <div class="stats-grid">
-            <StatCard 
-              :value="statistics.selectedQuestionStats.value.total_guesses || 0" 
-              label="Total Attempts" 
+            <StatCard
+              :value="statistics.selectedQuestionStats.value.total_guesses || 0"
+              label="Total Attempts"
             />
-            <StatCard 
-              :value="statistics.selectedQuestionStats.value.correct_guesses || 0" 
+            <StatCard
+              :value="statistics.selectedQuestionStats.value.correct_guesses || 0"
               label="Correct Guesses"
               value-class="success-text"
             />
-            <StatCard 
-              :value="(statistics.selectedQuestionStats.value.total_guesses - statistics.selectedQuestionStats.value.correct_guesses) || 0" 
+            <StatCard
+              :value="
+                statistics.selectedQuestionStats.value.total_guesses -
+                  statistics.selectedQuestionStats.value.correct_guesses || 0
+              "
               label="Incorrect Guesses"
               value-class="error-text"
             />
-            <StatCard 
-              :value="`${statistics.selectedQuestionStats.value.correct_percentage || 0}%`" 
+            <StatCard
+              :value="`${statistics.selectedQuestionStats.value.correct_percentage || 0}%`"
               label="Success Rate"
-              :value-class="getCorrectRateClass(statistics.selectedQuestionStats.value.correct_percentage)"
+              :value-class="
+                getCorrectRateClass(statistics.selectedQuestionStats.value.correct_percentage)
+              "
             />
           </div>
         </div>
@@ -310,7 +337,13 @@ onMounted(() => {
     </div>
 
     <!-- Quiz Selection (only when logged in or guest, on quiz view, not started) -->
-    <template v-if="(auth.currentUser.value || auth.guestMode.value) && navigation.isQuizView.value && !quiz.quizStarted.value">
+    <template
+      v-if="
+        (auth.currentUser.value || auth.guestMode.value) &&
+        navigation.isQuizView.value &&
+        !quiz.quizStarted.value
+      "
+    >
       <QuizSelector
         :quizzes="quiz.availableQuizzes.value"
         :selected-quiz-id="quiz.selectedQuizId.value"
@@ -330,18 +363,12 @@ onMounted(() => {
       />
 
       <!-- Guest mode notice -->
-      <GuestNotice
-        v-if="auth.guestMode.value"
-        @login="handleGuestLogin"
-      />
+      <GuestNotice v-if="auth.guestMode.value" @login="handleGuestLogin" />
     </template>
 
     <!-- Quiz In Progress -->
     <div v-if="quiz.quizStarted.value && !quiz.quizCompleted.value">
-      <ProgressBar 
-        :percentage="quiz.progressPercentage.value" 
-        height="12px"
-      />
+      <ProgressBar :percentage="quiz.progressPercentage.value" height="12px" />
       <div class="progress-text">
         Question {{ quiz.currentQuestionIndex.value + 1 }} of {{ quiz.questions.value.length }}
       </div>

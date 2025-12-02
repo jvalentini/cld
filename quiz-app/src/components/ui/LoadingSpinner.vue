@@ -6,8 +6,8 @@
 defineProps({
   message: {
     type: String,
-    default: 'Loading...'
-  }
+    default: 'Loading...',
+  },
 })
 </script>
 
@@ -45,4 +45,3 @@ defineProps({
   }
 }
 </style>
-

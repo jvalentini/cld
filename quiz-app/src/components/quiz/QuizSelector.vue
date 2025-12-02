@@ -8,16 +8,16 @@ import LoadingSpinner from '../ui/LoadingSpinner.vue'
 defineProps({
   quizzes: {
     type: Array,
-    required: true
+    required: true,
   },
   selectedQuizId: {
     type: [String, Number],
-    default: ''
+    default: '',
   },
   loading: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
 })
 
 const emit = defineEmits(['update:selectedQuizId', 'load-quiz'])
@@ -32,25 +32,13 @@ function handleQuizSelect(event) {
     <h3>Select a Quiz from Database</h3>
     <LoadingSpinner v-if="loading" message="Loading quizzes..." />
     <div v-else class="selector-group">
-      <select 
-        :value="selectedQuizId" 
-        @change="handleQuizSelect"
-        aria-label="Select a quiz"
-      >
+      <select :value="selectedQuizId" aria-label="Select a quiz" @change="handleQuizSelect">
         <option value="">-- Choose a quiz --</option>
-        <option
-          v-for="quiz in quizzes"
-          :key="quiz.id"
-          :value="quiz.id"
-        >
+        <option v-for="quiz in quizzes" :key="quiz.id" :value="quiz.id">
           {{ quiz.name }}
         </option>
       </select>
-      <button
-        class="btn-load"
-        @click="emit('load-quiz')"
-        :disabled="!selectedQuizId"
-      >
+      <button class="btn-load" :disabled="!selectedQuizId" @click="emit('load-quiz')">
         Load Quiz
       </button>
     </div>
@@ -111,4 +99,3 @@ select:focus {
   cursor: not-allowed;
 }
 </style>
-

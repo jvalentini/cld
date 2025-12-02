@@ -6,8 +6,8 @@
 defineProps({
   quizzes: {
     type: Array,
-    required: true
-  }
+    required: true,
+  },
 })
 
 const emit = defineEmits(['view-quiz'])
@@ -20,8 +20,8 @@ const emit = defineEmits(['view-quiz'])
       No quiz statistics available yet. Take some quizzes to see statistics!
     </div>
     <div v-else class="quiz-cards">
-      <div 
-        v-for="quiz in quizzes" 
+      <div
+        v-for="quiz in quizzes"
         :key="quiz.quiz_id"
         class="quiz-stat-card"
         role="button"
@@ -144,4 +144,3 @@ const emit = defineEmits(['view-quiz'])
   border: 2px dashed #dee2e6;
 }
 </style>
-

@@ -8,12 +8,12 @@ import ProgressBar from '../ui/ProgressBar.vue'
 defineProps({
   answers: {
     type: Array,
-    required: true
+    required: true,
   },
   totalGuesses: {
     type: Number,
-    required: true
-  }
+    required: true,
+  },
 })
 
 function getAnswerPercentage(guesses, total) {
@@ -26,8 +26,8 @@ function getAnswerPercentage(guesses, total) {
   <div class="answer-breakdown">
     <h3>Answer Breakdown</h3>
     <div class="answer-stats-list">
-      <div 
-        v-for="answer in answers" 
+      <div
+        v-for="answer in answers"
         :key="answer.answer_id"
         class="answer-stat-card"
         :class="{ 'correct-answer': answer.is_correct }"
@@ -44,11 +44,11 @@ function getAnswerPercentage(guesses, total) {
         </div>
         <div class="answer-text">{{ answer.answer_text }}</div>
         <div class="answer-stats-bar">
-          <ProgressBar 
+          <ProgressBar
             :percentage="getAnswerPercentage(answer.guesses, totalGuesses)"
             :variant="answer.is_correct ? 'high' : 'low'"
             height="24px"
-            showLabel
+            show-label
           />
         </div>
       </div>
@@ -155,4 +155,3 @@ function getAnswerPercentage(guesses, total) {
   padding-left: 42px;
 }
 </style>
-

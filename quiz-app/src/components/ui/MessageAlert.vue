@@ -6,23 +6,18 @@
 defineProps({
   message: {
     type: String,
-    default: ''
+    default: '',
   },
   type: {
     type: String,
     default: 'info',
-    validator: (value) => ['error', 'success', 'info', 'warning'].includes(value)
-  }
+    validator: value => ['error', 'success', 'info', 'warning'].includes(value),
+  },
 })
 </script>
 
 <template>
-  <div 
-    v-if="message" 
-    class="alert" 
-    :class="`alert-${type}`"
-    role="alert"
-  >
+  <div v-if="message" class="alert" :class="`alert-${type}`" role="alert">
     {{ message }}
   </div>
 </template>
@@ -55,4 +50,3 @@ defineProps({
   border-left: 4px solid #ffc107;
 }
 </style>
-

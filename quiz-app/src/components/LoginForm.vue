@@ -12,8 +12,8 @@ import MessageAlert from './ui/MessageAlert.vue'
 const props = defineProps({
   isLogin: {
     type: Boolean,
-    default: true
-  }
+    default: true,
+  },
 })
 
 const emit = defineEmits(['login-success', 'toggle-mode'])
@@ -24,7 +24,7 @@ const formData = ref({
   email: '',
   password: '',
   confirmPassword: '',
-  fullName: ''
+  fullName: '',
 })
 
 const loading = ref(false)
@@ -82,7 +82,7 @@ async function handleLogin() {
       id: user.id,
       username: user.username,
       email: user.email,
-      full_name: user.full_name
+      full_name: user.full_name,
     })
   } catch (err) {
     console.error('Login error:', err)
@@ -140,7 +140,7 @@ async function handleSignup() {
         username: formData.value.username,
         email: formData.value.email,
         password_hash: passwordHash,
-        full_name: formData.value.fullName
+        full_name: formData.value.fullName,
       })
       .select()
       .single()
@@ -155,7 +155,7 @@ async function handleSignup() {
         id: newUser.id,
         username: newUser.username,
         email: newUser.email,
-        full_name: newUser.full_name
+        full_name: newUser.full_name,
       })
     }, 1000)
   } catch (err) {
@@ -173,7 +173,7 @@ function handleToggleMode() {
     email: '',
     password: '',
     confirmPassword: '',
-    fullName: ''
+    fullName: '',
   }
   error.value = null
   success.value = null
@@ -189,7 +189,7 @@ function handleToggleMode() {
       <MessageAlert v-if="error" :message="error" type="error" />
       <MessageAlert v-if="success" :message="success" type="success" />
 
-      <form @submit.prevent="handleSubmit" class="auth-form">
+      <form class="auth-form" @submit.prevent="handleSubmit">
         <div v-if="!isLogin" class="form-group">
           <label for="fullName">Full Name</label>
           <input

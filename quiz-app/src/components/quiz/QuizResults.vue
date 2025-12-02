@@ -3,37 +3,41 @@
  * Quiz results display component
  */
 
-import { getQuestionTypeLabel, getQuestionTypeBadgeClass, getAnswerLabel } from '../../utils/questionTypes.js'
+import {
+  getQuestionTypeLabel,
+  getQuestionTypeBadgeClass,
+  getAnswerLabel,
+} from '../../utils/questionTypes.js'
 
 defineProps({
   questions: {
     type: Array,
-    required: true
+    required: true,
   },
   userAnswers: {
     type: Array,
-    required: true
+    required: true,
   },
   correctAnswers: {
     type: Array,
-    required: true
+    required: true,
   },
   score: {
     type: Number,
-    required: true
+    required: true,
   },
   scorePercentage: {
     type: Number,
-    required: true
+    required: true,
   },
   multipleChoiceScore: {
     type: Object,
-    default: () => ({ total: 0, correct: 0 })
+    default: () => ({ total: 0, correct: 0 }),
   },
   trueFalseScore: {
     type: Object,
-    default: () => ({ total: 0, correct: 0 })
-  }
+    default: () => ({ total: 0, correct: 0 }),
+  },
 })
 
 const emit = defineEmits(['reset'])
@@ -57,15 +61,12 @@ function getLabel(index, question) {
     <div class="score">{{ score }} / {{ questions.length }}</div>
     <p class="subtitle">{{ scorePercentage }}% Correct</p>
 
-    <div
-      class="score-breakdown"
-      v-if="multipleChoiceScore.total > 0 || trueFalseScore.total > 0"
-    >
-      <div class="score-item" v-if="multipleChoiceScore.total > 0">
+    <div v-if="multipleChoiceScore.total > 0 || trueFalseScore.total > 0" class="score-breakdown">
+      <div v-if="multipleChoiceScore.total > 0" class="score-item">
         <div class="score-value">{{ multipleChoiceScore.correct }}</div>
         <div class="score-label">Multiple Choice Correct</div>
       </div>
-      <div class="score-item" v-if="trueFalseScore.total > 0">
+      <div v-if="trueFalseScore.total > 0" class="score-item">
         <div class="score-value">{{ trueFalseScore.correct }}</div>
         <div class="score-label">True/False Correct</div>
       </div>
@@ -73,22 +74,13 @@ function getLabel(index, question) {
 
     <div class="results-detail">
       <h3>Review Your Answers</h3>
-      <div
-        v-for="(question, qIndex) in questions"
-        :key="qIndex"
-        class="result-item"
-      >
+      <div v-for="(question, qIndex) in questions" :key="qIndex" class="result-item">
         <div class="result-header">
-          <span
-            class="question-type-badge"
-            :class="getTypeBadgeClass(question)"
-          >
+          <span class="question-type-badge" :class="getTypeBadgeClass(question)">
             {{ getTypeLabel(question) }}
           </span>
         </div>
-        <div class="result-question">
-          {{ qIndex + 1 }}. {{ question.question }}
-        </div>
+        <div class="result-question">{{ qIndex + 1 }}. {{ question.question }}</div>
         <div
           class="result-answer"
           :class="{
@@ -107,9 +99,7 @@ function getLabel(index, question) {
       </div>
     </div>
 
-    <button class="btn-primary reset-btn" @click="emit('reset')">
-      Take Another Quiz
-    </button>
+    <button class="btn-primary reset-btn" @click="emit('reset')">Take Another Quiz</button>
   </div>
 </template>
 
@@ -238,4 +228,3 @@ function getLabel(index, question) {
   margin-top: 20px;
 }
 </style>
-
