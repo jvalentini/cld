@@ -100,8 +100,8 @@ test.describe('Multiple Quizzes - Quiz Content Validation', () => {
       if (isInProgress) {
         const firstQuestion1 = await quizPage.questionText.textContent()
         
-        // Restart and load second quiz
-        await quizPage.restartQuiz()
+        // Navigate back to quiz selector (don't use restart - quiz isn't completed)
+        await quizPage.navigateToQuiz()
         await quizPage.waitForQuizToLoad()
         
         if (options > 2) {
