@@ -1,6 +1,6 @@
 /**
  * Page Object Model for Quiz App
- * Encapsulates page interactions for cleaner, more maintainable tests
+ * Encapsulates page interactions for cleaner, maintainable tests
  */
 
 export class QuizPage {
@@ -9,18 +9,19 @@ export class QuizPage {
     
     // Header elements
     this.header = page.locator('h1')
-    this.quizNavButton = page.locator('button:has-text("Quiz")')
-    this.leaderboardNavButton = page.locator('button:has-text("Leaderboard")')
-    this.statsNavButton = page.locator('button:has-text("Stats")')
+    this.quizNavButton = page.locator('button.btn-nav:has-text("Take Quiz")')
+    this.leaderboardNavButton = page.locator('button.btn-nav:has-text("Leaderboard")')
+    this.statsNavButton = page.locator('button.btn-nav:has-text("Statistics")')
     this.logoutButton = page.locator('button:has-text("Logout")')
     
-    // Login/Auth elements
-    this.loginForm = page.locator('.login-form, .auth-form')
-    this.usernameInput = page.locator('input[placeholder*="Username"], input[name="username"]')
-    this.passwordInput = page.locator('input[type="password"]')
-    this.loginButton = page.locator('button:has-text("Log In"), button:has-text("Login")')
-    this.signupButton = page.locator('button:has-text("Sign Up")')
-    this.toggleAuthModeLink = page.locator('a:has-text("Sign up"), a:has-text("Log in")')
+    // Login/Auth elements - using actual IDs from LoginForm.vue
+    this.loginForm = page.locator('.auth-form')
+    this.authCard = page.locator('.auth-card')
+    this.usernameInput = page.locator('#username')
+    this.passwordInput = page.locator('#password')
+    this.loginButton = page.locator('button[type="submit"]:has-text("Login")')
+    this.signupButton = page.locator('button[type="submit"]:has-text("Sign Up")')
+    this.toggleAuthModeLink = page.locator('.auth-switch a')
     
     // Guest mode
     this.guestAccessSection = page.locator('.guest-access')
@@ -42,10 +43,10 @@ export class QuizPage {
     this.nextButton = page.locator('button:has-text("Next")')
     this.finishButton = page.locator('button:has-text("Finish")')
     
-    // Quiz results
-    this.resultsSection = page.locator('.results, .quiz-results')
-    this.scoreDisplay = page.locator('.score, .score-percentage')
-    this.restartButton = page.locator('button:has-text("Try Again"), button:has-text("Start Over"), button:has-text("Restart")')
+    // Quiz results - using actual text from QuizResults.vue
+    this.resultsSection = page.locator('.results')
+    this.scoreDisplay = page.locator('.results .score')
+    this.restartButton = page.locator('button:has-text("Take Another Quiz")')
     
     // Messages
     this.errorMessage = page.locator('.error, .message-alert.error')
@@ -56,7 +57,8 @@ export class QuizPage {
     this.quizStatsList = page.locator('.quiz-stats-list')
     
     // Leaderboard
-    this.leaderboardTable = page.locator('.leaderboard, table')
+    this.leaderboardContainer = page.locator('.leaderboard-container')
+    this.leaderboardTable = page.locator('.leaderboard-table table')
     
     // Loading states
     this.loadingSpinner = page.locator('.loading, .loading-spinner')
@@ -149,7 +151,7 @@ export class QuizPage {
 
   async getScore() {
     const scoreText = await this.scoreDisplay.textContent()
-    const match = scoreText.match(/(\d+)%?/)
+    const match = scoreText.match(/(\d+)/)
     return match ? parseInt(match[1]) : 0
   }
 
@@ -203,4 +205,3 @@ export class QuizPage {
     }
   }
 }
-

@@ -12,6 +12,8 @@ test.describe('Authentication - Login Form', () => {
   })
 
   test('should display login form with username and password fields', async ({ quizPage }) => {
+    // The auth card should be visible with form fields
+    await expect(quizPage.authCard).toBeVisible()
     await expect(quizPage.usernameInput).toBeVisible()
     await expect(quizPage.passwordInput).toBeVisible()
   })
@@ -21,11 +23,7 @@ test.describe('Authentication - Login Form', () => {
   })
 
   test('should have option to toggle between login and signup', async ({ quizPage }) => {
-    // Look for toggle link or signup button
-    const toggleLink = quizPage.page.locator('a:has-text("Sign up"), a:has-text("Create"), button:has-text("Sign Up")')
-    const isVisible = await toggleLink.first().isVisible().catch(() => false)
-    
-    expect(isVisible).toBeTruthy()
+    await expect(quizPage.toggleAuthModeLink).toBeVisible()
   })
 
   test('should allow typing in username field', async ({ quizPage }) => {
@@ -65,7 +63,7 @@ test.describe('Authentication - Guest Mode', () => {
     await quizPage.continueAsGuest()
     await quizPage.waitForQuizToLoad()
     
-    // Guest notice should indicate limited functionality
+    // Guest notice should be visible
     await expect(quizPage.guestNotice).toBeVisible({ timeout: 10000 })
   })
 
@@ -99,47 +97,39 @@ test.describe('Authentication - Login Validation', () => {
   })
 
   test('should show error for empty username', async ({ quizPage, page }) => {
-    // Try to login with empty username
+    // Form has required fields - browser validation will prevent submission
+    // Just verify the form stays on login view
     await quizPage.passwordInput.fill('somepassword')
+    
+    // Try to submit - browser validation should prevent it
     await quizPage.loginButton.click()
     
-    // Wait a moment for validation
-    await page.waitForTimeout(500)
-    
-    // Should either show validation error or stay on login form
-    const stillOnLogin = await quizPage.loginForm.isVisible().catch(() => false) ||
-                         await quizPage.usernameInput.isVisible()
-    expect(stillOnLogin).toBeTruthy()
+    // Should still be on login form
+    await expect(quizPage.authCard).toBeVisible()
   })
 
   test('should show error for empty password', async ({ quizPage, page }) => {
-    // Try to login with empty password
+    // Form has required fields - browser validation will prevent submission
     await quizPage.usernameInput.fill('testuser')
+    
+    // Try to submit - browser validation should prevent it
     await quizPage.loginButton.click()
     
-    // Wait a moment for validation
-    await page.waitForTimeout(500)
-    
-    // Should either show validation error or stay on login form
-    const stillOnLogin = await quizPage.loginForm.isVisible().catch(() => false) ||
-                         await quizPage.passwordInput.isVisible()
-    expect(stillOnLogin).toBeTruthy()
+    // Should still be on login form
+    await expect(quizPage.authCard).toBeVisible()
   })
 
   test('should show error for invalid credentials', async ({ quizPage, page }) => {
-    // Try to login with invalid credentials
+    // Fill in credentials that don't exist
     await quizPage.usernameInput.fill('nonexistent_user_12345')
     await quizPage.passwordInput.fill('wrong_password_67890')
     await quizPage.loginButton.click()
     
-    // Wait for response
+    // Wait for response - should show error or stay on login
     await page.waitForTimeout(2000)
     
-    // Should show error or stay on login
-    const errorVisible = await quizPage.errorMessage.isVisible().catch(() => false)
-    const stillOnLogin = await quizPage.usernameInput.isVisible()
-    
-    expect(errorVisible || stillOnLogin).toBeTruthy()
+    // Should still be on login form (failed login)
+    await expect(quizPage.authCard).toBeVisible()
   })
 })
 
@@ -171,23 +161,14 @@ test.describe('Authentication - Sign Up Form', () => {
   test.beforeEach(async ({ quizPage, page }) => {
     await quizPage.goto()
     await quizPage.waitForAppLoad()
-    
-    // Try to find and click on sign up toggle
-    const signUpLink = page.locator('a:has-text("Sign up"), a:has-text("Create an account")')
-    const isVisible = await signUpLink.isVisible().catch(() => false)
-    
-    if (isVisible) {
-      await signUpLink.click()
-      await page.waitForTimeout(500)
-    }
   })
 
-  test('should have signup form accessible', async ({ quizPage, page }) => {
-    // Either signup form is shown or there's a toggle to get to it
-    const signUpButton = page.locator('button:has-text("Sign Up"), button:has-text("Create Account")')
-    const isVisible = await signUpButton.isVisible().catch(() => false)
+  test('should have signup form accessible via toggle', async ({ quizPage, page }) => {
+    // Click the toggle link to switch to signup
+    await quizPage.toggleAuthModeLink.click()
+    await page.waitForTimeout(300)
     
-    expect(isVisible).toBeTruthy()
+    // Should show signup button now
+    await expect(quizPage.signupButton).toBeVisible()
   })
 })
-

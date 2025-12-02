@@ -18,11 +18,11 @@ test.describe('Quiz App - Initial Load', () => {
     await quizPage.goto()
     await quizPage.waitForAppLoad()
     
-    // Should show either login form or guest access option
-    const loginFormVisible = await quizPage.loginForm.isVisible().catch(() => false)
+    // Should show auth card or guest access option
+    const authCardVisible = await quizPage.authCard.isVisible().catch(() => false)
     const guestAccessVisible = await quizPage.guestAccessSection.isVisible().catch(() => false)
     
-    expect(loginFormVisible || guestAccessVisible).toBeTruthy()
+    expect(authCardVisible || guestAccessVisible).toBeTruthy()
   })
 
   test('should have guest access option', async ({ quizPage }) => {
@@ -257,6 +257,7 @@ test.describe('Quiz App - Quiz Completion', () => {
       await quizPage.completeQuizRandomly()
       
       await expect(quizPage.resultsSection).toBeVisible({ timeout: 10000 })
+      // The button says "Take Another Quiz"
       await expect(quizPage.restartButton).toBeVisible()
     }
   })
@@ -269,8 +270,8 @@ test.describe('Quiz App - Quiz Completion', () => {
       
       await expect(quizPage.resultsSection).toBeVisible({ timeout: 10000 })
       
-      // Click restart/try again
-      await quizPage.restartQuiz()
+      // Click "Take Another Quiz"
+      await quizPage.restartButton.click()
       
       // Should be back to quiz selection
       await expect(quizPage.quizSelector).toBeVisible({ timeout: 10000 })
@@ -292,8 +293,8 @@ test.describe('Quiz App - Navigation', () => {
     if (leaderboardBtnVisible) {
       await quizPage.navigateToLeaderboard()
       
-      // Should show leaderboard content
-      await expect(quizPage.leaderboardTable).toBeVisible({ timeout: 10000 })
+      // Should show leaderboard container
+      await expect(quizPage.leaderboardContainer).toBeVisible({ timeout: 10000 })
     }
   })
 
@@ -302,8 +303,9 @@ test.describe('Quiz App - Navigation', () => {
     
     if (leaderboardBtnVisible) {
       await quizPage.navigateToLeaderboard()
-      await quizPage.page.waitForTimeout(500)
+      await expect(quizPage.leaderboardContainer).toBeVisible({ timeout: 10000 })
       
+      // Navigate back to quiz
       await quizPage.navigateToQuiz()
       
       await expect(quizPage.quizSelector).toBeVisible({ timeout: 10000 })
@@ -349,4 +351,3 @@ test.describe('Quiz App - Error Handling', () => {
     await expect(quizPage.continueAsGuestButton).toBeVisible()
   })
 })
-
