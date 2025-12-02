@@ -9,20 +9,20 @@ import LoadingSpinner from '../ui/LoadingSpinner.vue'
 defineProps({
   totalQuizzes: {
     type: Number,
-    required: true
+    required: true,
   },
   totalSubmissions: {
     type: Number,
-    required: true
+    required: true,
   },
   averageScore: {
     type: Number,
-    required: true
+    required: true,
   },
   loading: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
 })
 </script>
 
@@ -31,18 +31,9 @@ defineProps({
     <h3>Overall Statistics</h3>
     <LoadingSpinner v-if="loading" message="Loading statistics..." />
     <div v-else class="stats-grid">
-      <StatCard 
-        :value="totalQuizzes" 
-        label="Total Quizzes" 
-      />
-      <StatCard 
-        :value="totalSubmissions" 
-        label="Total Submissions" 
-      />
-      <StatCard 
-        :value="`${averageScore}%`" 
-        label="Average Score" 
-      />
+      <StatCard :value="totalQuizzes" label="Total Quizzes" />
+      <StatCard :value="totalSubmissions" label="Total Submissions" />
+      <StatCard :value="`${averageScore}%`" label="Average Score" />
     </div>
   </div>
 </template>
@@ -63,4 +54,3 @@ defineProps({
   gap: 20px;
 }
 </style>
-

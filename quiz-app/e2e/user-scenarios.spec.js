@@ -3,7 +3,7 @@
  * Tests different user roles, authentication, and user-specific features
  */
 
-import { test, expect, testUsers } from './fixtures/test-fixtures.js'
+import { test, expect } from './fixtures/test-fixtures.js'
 
 test.describe('User Scenarios - Multiple Users', () => {
   test.beforeEach(async ({ quizPage }) => {

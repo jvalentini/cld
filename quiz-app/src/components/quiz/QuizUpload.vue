@@ -6,12 +6,12 @@
 defineProps({
   uploadedQuizName: {
     type: String,
-    default: ''
+    default: '',
   },
   hasUploadedData: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
 })
 
 const emit = defineEmits(['file-change', 'update:uploadedQuizName', 'save-quiz'])
@@ -29,28 +29,23 @@ function handleNameInput(event) {
   <div class="upload-section">
     <div class="divider">OR</div>
     <div class="file-upload">
-      <input
-        type="file"
-        id="fileInput"
-        @change="handleFileChange"
-        accept=".json"
-      />
+      <input id="fileInput" type="file" accept=".json" @change="handleFileChange" />
       <label for="fileInput">📁 Upload a new quiz JSON file</label>
-      
+
       <div v-if="hasUploadedData" class="quiz-name-input">
         <label for="quizNameInput" class="input-label">Quiz Name:</label>
         <input
           id="quizNameInput"
           :value="uploadedQuizName"
-          @input="handleNameInput"
           type="text"
           placeholder="Enter a name for this quiz"
           required
+          @input="handleNameInput"
         />
         <button
           class="btn-save"
-          @click="emit('save-quiz')"
           :disabled="!uploadedQuizName || !hasUploadedData"
+          @click="emit('save-quiz')"
         >
           💾 Save Quiz to Database
         </button>
@@ -69,7 +64,7 @@ function handleNameInput(event) {
 
 .divider::before,
 .divider::after {
-  content: "";
+  content: '';
   position: absolute;
   top: 50%;
   width: 45%;
@@ -125,7 +120,7 @@ function handleNameInput(event) {
   text-align: left;
 }
 
-.quiz-name-input input[type="text"] {
+.quiz-name-input input[type='text'] {
   width: 100%;
   padding: 12px;
   border: 2px solid #ddd;
@@ -134,7 +129,7 @@ function handleNameInput(event) {
   transition: border-color 0.3s ease;
 }
 
-.quiz-name-input input[type="text"]:focus {
+.quiz-name-input input[type='text']:focus {
   outline: none;
   border-color: #007bff;
   box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
@@ -163,4 +158,3 @@ function handleNameInput(event) {
   cursor: not-allowed;
 }
 </style>
-

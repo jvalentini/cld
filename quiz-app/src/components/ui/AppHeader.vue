@@ -6,20 +6,20 @@
 defineProps({
   currentUser: {
     type: Object,
-    default: null
+    default: null,
   },
   showQuizNav: {
     type: Boolean,
-    default: false
+    default: false,
   },
   showLeaderboardNav: {
     type: Boolean,
-    default: true
+    default: true,
   },
   showStatsNav: {
     type: Boolean,
-    default: true
-  }
+    default: true,
+  },
 })
 
 const emit = defineEmits(['navigate-quiz', 'navigate-leaderboard', 'navigate-stats', 'logout'])
@@ -34,41 +34,27 @@ const emit = defineEmits(['navigate-quiz', 'navigate-leaderboard', 'navigate-sta
         <p class="subtitle">Test your knowledge</p>
       </div>
     </div>
-    
+
     <!-- Row 2: Navigation and User Info -->
     <div class="header-bottom">
       <nav class="nav-section" aria-label="Main navigation">
-        <button 
-          v-if="showQuizNav"
-          class="btn-nav" 
-          @click="emit('navigate-quiz')"
-        >
+        <button v-if="showQuizNav" class="btn-nav" @click="emit('navigate-quiz')">
           🏠 Take Quiz
         </button>
-        <button 
-          v-if="showLeaderboardNav"
-          class="btn-nav" 
-          @click="emit('navigate-leaderboard')"
-        >
+        <button v-if="showLeaderboardNav" class="btn-nav" @click="emit('navigate-leaderboard')">
           🏆 Leaderboard
         </button>
-        <button 
-          v-if="showStatsNav"
-          class="btn-nav" 
-          @click="emit('navigate-stats')"
-        >
+        <button v-if="showStatsNav" class="btn-nav" @click="emit('navigate-stats')">
           📊 Statistics
         </button>
       </nav>
-      
+
       <div v-if="currentUser" class="user-section">
         <div class="user-info">
           <span class="user-icon" aria-hidden="true">👤</span>
           <span class="user-name">{{ currentUser.fullName || currentUser.username }}</span>
         </div>
-        <button class="btn-logout" @click="emit('logout')">
-          Logout
-        </button>
+        <button class="btn-logout" @click="emit('logout')">Logout</button>
       </div>
     </div>
   </header>
@@ -174,4 +160,3 @@ const emit = defineEmits(['navigate-quiz', 'navigate-leaderboard', 'navigate-sta
   transform: scale(1.05);
 }
 </style>
-

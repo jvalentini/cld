@@ -9,8 +9,8 @@ import { getCorrectRateClass } from '../../utils/questionTypes.js'
 defineProps({
   questions: {
     type: Array,
-    required: true
-  }
+    required: true,
+  },
 })
 
 const emit = defineEmits(['view-question'])
@@ -23,12 +23,10 @@ function getProgressVariant(percentage) {
 <template>
   <div class="question-stats">
     <h3>Question Statistics</h3>
-    <div v-if="questions.length === 0" class="no-data">
-      No question statistics available yet.
-    </div>
+    <div v-if="questions.length === 0" class="no-data">No question statistics available yet.</div>
     <div v-else class="question-stats-list">
-      <div 
-        v-for="(qStat, index) in questions" 
+      <div
+        v-for="(qStat, index) in questions"
         :key="qStat.question_id"
         class="question-stat-card clickable"
         role="button"
@@ -38,9 +36,11 @@ function getProgressVariant(percentage) {
       >
         <div class="question-stat-header">
           <span class="question-number">Question {{ index + 1 }}</span>
-          <span 
-            class="question-type-badge" 
-            :class="qStat.question_type === 'true_false' ? 'badge-true-false' : 'badge-multiple-choice'"
+          <span
+            class="question-type-badge"
+            :class="
+              qStat.question_type === 'true_false' ? 'badge-true-false' : 'badge-multiple-choice'
+            "
           >
             {{ qStat.question_type === 'true_false' ? 'True/False' : 'Multiple Choice' }}
           </span>
@@ -68,7 +68,7 @@ function getProgressVariant(percentage) {
             </span>
           </div>
         </div>
-        <ProgressBar 
+        <ProgressBar
           :percentage="qStat.correct_percentage || 0"
           :variant="getProgressVariant(qStat.correct_percentage)"
           height="8px"
@@ -235,4 +235,3 @@ function getProgressVariant(percentage) {
   border: 2px dashed #dee2e6;
 }
 </style>
-

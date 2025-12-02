@@ -7,36 +7,36 @@ defineProps({
   percentage: {
     type: Number,
     required: true,
-    validator: (value) => value >= 0 && value <= 100
+    validator: value => value >= 0 && value <= 100,
   },
   variant: {
     type: String,
     default: 'default',
-    validator: (value) => ['default', 'high', 'medium', 'low'].includes(value)
+    validator: value => ['default', 'high', 'medium', 'low'].includes(value),
   },
   height: {
     type: String,
-    default: '12px'
+    default: '12px',
   },
   showLabel: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
 })
 </script>
 
 <template>
   <div class="progress-wrapper">
-    <div 
-      class="progress-bar" 
+    <div
+      class="progress-bar"
       :style="{ height }"
       role="progressbar"
       :aria-valuenow="percentage"
       aria-valuemin="0"
       aria-valuemax="100"
     >
-      <div 
-        class="progress-fill" 
+      <div
+        class="progress-fill"
         :class="`progress-${variant}`"
         :style="{ width: `${percentage}%` }"
       ></div>
@@ -88,4 +88,3 @@ defineProps({
   font-size: 14px;
 }
 </style>
-

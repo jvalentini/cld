@@ -7,26 +7,24 @@ defineProps({
   items: {
     type: Array,
     required: true,
-    validator: (items) => items.every(item => 
-      typeof item.label === 'string' && 
-      (item.current === true || typeof item.action === 'function' || item.action === undefined)
-    )
-  }
+    validator: items =>
+      items.every(
+        item =>
+          typeof item.label === 'string' &&
+          (item.current === true || typeof item.action === 'function' || item.action === undefined)
+      ),
+  },
 })
 </script>
 
 <template>
   <nav class="breadcrumb" aria-label="Breadcrumb">
     <template v-for="(item, index) in items" :key="index">
-      <span 
-        v-if="item.current" 
-        class="breadcrumb-current"
-        aria-current="page"
-      >
+      <span v-if="item.current" class="breadcrumb-current" aria-current="page">
         {{ item.label }}
       </span>
-      <span 
-        v-else 
+      <span
+        v-else
         class="breadcrumb-link"
         role="button"
         tabindex="0"
@@ -35,11 +33,7 @@ defineProps({
       >
         {{ item.label }}
       </span>
-      <span 
-        v-if="index < items.length - 1" 
-        class="breadcrumb-separator"
-        aria-hidden="true"
-      >
+      <span v-if="index < items.length - 1" class="breadcrumb-separator" aria-hidden="true">
         ›
       </span>
     </template>
@@ -79,4 +73,3 @@ defineProps({
   font-weight: 600;
 }
 </style>
-

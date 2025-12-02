@@ -60,10 +60,7 @@ export function useStatistics() {
     statsError.value = null
 
     try {
-      const { data, error } = await supabase
-        .from('quiz_statistics')
-        .select('*')
-        .order('quiz_name')
+      const { data, error } = await supabase.from('quiz_statistics').select('*').order('quiz_name')
 
       if (error) throw error
 
@@ -218,14 +215,14 @@ export function useStatistics() {
     selectedStatsQuizId,
     loadingStats,
     statsError,
-    
+
     // Computed
     totalSubmissions,
     overallAverageScore,
     hasQuizStats,
     hasQuestionStats,
     hasAnswerStats,
-    
+
     // Methods
     loadAllQuizStats,
     loadQuizStats,
@@ -235,7 +232,6 @@ export function useStatistics() {
     clearQuizStats,
     clearQuestionDetail,
     resetStatistics,
-    clearError
+    clearError,
   }
 }
-

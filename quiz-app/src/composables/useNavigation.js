@@ -91,16 +91,16 @@ export function useNavigation() {
         break
       case VIEWS.QUIZ_STATS:
         breadcrumbs.push({ label: 'Statistics', action: goToStatsPage })
-        breadcrumbs.push({ 
-          label: selectedQuizStats?.quiz_name || 'Quiz Details', 
-          current: true 
+        breadcrumbs.push({
+          label: selectedQuizStats?.quiz_name || 'Quiz Details',
+          current: true,
         })
         break
       case VIEWS.QUESTION_DETAIL:
         breadcrumbs.push({ label: 'Statistics', action: goToStatsPage })
-        breadcrumbs.push({ 
-          label: selectedQuizStats?.quiz_name || 'Quiz Details', 
-          action: goToQuizStats 
+        breadcrumbs.push({
+          label: selectedQuizStats?.quiz_name || 'Quiz Details',
+          action: goToQuizStats,
         })
         breadcrumbs.push({ label: 'Question Detail', current: true })
         break
@@ -112,14 +112,14 @@ export function useNavigation() {
   return {
     // State
     currentView,
-    
+
     // Computed
     isQuizView,
     isLeaderboardView,
     isStatsView,
     isQuizStatsView,
     isQuestionDetailView,
-    
+
     // Methods
     goToQuizPage,
     goToLeaderboard,
@@ -127,7 +127,6 @@ export function useNavigation() {
     goToQuizStats,
     goToQuestionDetail,
     navigateTo,
-    getBreadcrumbs
+    getBreadcrumbs,
   }
 }
-
