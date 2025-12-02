@@ -19,6 +19,8 @@ A complete solution for converting DOCX question files into interactive web-base
 - Clean, modern UI with smooth animations
 - Results page showing score and answer review
 - Fully containerized with Nginx for production deployment
+- Comprehensive end-to-end testing with Playwright
+- Guest mode for testing without authentication
 
 ## 📋 Prerequisites
 
@@ -33,8 +35,31 @@ This project includes a complete GitHub Actions pipeline that automatically:
  - ✅ Builds Docker images on every push
  - ✅ Parses DOCX files to JSON
  - ✅ Validates output
+ - ✅ Runs unit tests (Vitest) and end-to-end tests (Playwright)
  - ✅ Deploys to GitHub Pages
- - ✅ Runs tests and checks on PRs
+ - ✅ Runs comprehensive checks on PRs (linting, validation, tests)
+
+### GitHub Actions Workflows
+
+**PR Checks** (`.github/workflows/pr-check.yml`):
+- Dockerfile linting
+- JSON validation
+- Project structure verification
+- Parser unit tests
+- Docker build tests
+- Makefile validation
+
+**E2E Tests** (`.github/workflows/e2e-tests.yml`):
+- Runs Playwright end-to-end tests on all PRs
+- Tests on Chromium browser
+- Multi-browser testing (Firefox, WebKit) on master branch
+- Uploads test reports and artifacts
+
+**Main CI/CD** (`.github/workflows/main.yml`):
+- Builds and pushes Docker images to GitHub Container Registry
+- Parses DOCX files and validates output
+- Builds quiz app for deployment
+- Deploys to GitHub Pages on master branch
   
 ## 📝 DOCX Format Requirements
 
@@ -145,6 +170,27 @@ make quiz-run           # → docker run
 make quiz-test          # → same as test-quiz
 ```
 
+### E2E Testing Commands (Playwright)
+
+```bash
+make e2e              # Run all Playwright e2e tests (requires dev server)
+make e2e-ui           # Run tests with Playwright UI mode
+make e2e-headed       # Run tests with visible browser
+make e2e-debug        # Run tests in debug mode
+make e2e-report       # Show the Playwright HTML report
+make e2e-install      # Install Playwright browsers
+make e2e-chromium     # Run tests on Chromium only
+make e2e-firefox      # Run tests on Firefox only
+make e2e-webkit       # Run tests on WebKit only
+make e2e-docker       # Run e2e tests in Docker containers
+```
+
+**Quick aliases:**
+- `make e` → `make e2e`
+- `make eu` → `make e2e-ui`
+- `make ed` → `make e2e-debug`
+- `make er` → `make e2e-report`
+
 ### Docker Compose Commands
 
 ```bash
@@ -168,6 +214,59 @@ make sample        # Create a sample quiz JSON file for testing
 make status        # Show status of Docker containers and images
 make clean         # Remove Docker containers and images
 make clean-all     # Clean everything including output files
+```
+
+## 🧪 Testing
+
+### Unit Tests (Vitest)
+
+The quiz app includes comprehensive unit tests using Vitest:
+
+```bash
+cd quiz-app
+make test          # Run all unit tests
+make test-watch    # Watch mode
+make test-ui       # Open Vitest UI
+make coverage      # Generate coverage report
+```
+
+### End-to-End Tests (Playwright)
+
+The project includes end-to-end tests using Playwright that test the full user flow:
+
+```bash
+cd quiz-app
+
+# First time setup - install browsers
+make e2e-install
+
+# Run all e2e tests (starts dev server automatically)
+make e2e
+
+# Run with visible browser
+make e2e-headed
+
+# Open interactive UI mode
+make e2e-ui
+
+# Run in Docker (isolated environment)
+make e2e-docker
+```
+
+**Test Coverage:**
+- Authentication flows (login, signup, guest mode)
+- Quiz selection and loading
+- Question navigation and answer selection
+- Quiz completion and results
+- Navigation between views
+- Responsive design on mobile/tablet
+- Error handling
+
+**Running Specific Browser Tests:**
+```bash
+make e2e-chromium   # Test on Chromium only
+make e2e-firefox    # Test on Firefox only
+make e2e-webkit     # Test on WebKit (Safari) only
 ```
 
 ## 📖 Common Usage Examples
@@ -366,6 +465,9 @@ Feel free to submit issues, fork the repository, and create pull requests for an
 - The quiz app stores progress in localStorage - clearing browser data will reset it
 - You can upload different JSON files without restarting the app
 - Use `make sample` to quickly test the app without creating a DOCX file
+- Run `make e2e` before pushing to ensure all e2e tests pass
+- Use `make e2e-ui` for an interactive test debugging experience
+- GitHub Actions automatically runs e2e tests on all PRs
 
 ## 📞 Support
 
