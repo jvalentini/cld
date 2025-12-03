@@ -1,7 +1,7 @@
 # Dockerfile for running the quiz app in development mode
 # Used by e2e tests to have a target to test against
 
-FROM node:18-alpine
+FROM node:25-alpine
 
 WORKDIR /app
 
