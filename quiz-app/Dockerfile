@@ -12,6 +12,9 @@ ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
 
 WORKDIR /app
 
+# Update npm to latest version to suppress version notices
+RUN npm install -g npm@latest
+
 # Copy package files
 COPY package*.json ./
 

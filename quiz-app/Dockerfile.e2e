@@ -6,6 +6,9 @@ FROM mcr.microsoft.com/playwright:v1.57.0-noble
 # Set working directory
 WORKDIR /app
 
+# Update npm to latest version to suppress version notices
+RUN npm install -g npm@latest
+
 # Copy package files first for better caching
 COPY package*.json ./
 
