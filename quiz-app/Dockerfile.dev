@@ -5,6 +5,9 @@ FROM node:25-alpine
 
 WORKDIR /app
 
+# Update npm to latest version to suppress version notices
+RUN npm install -g npm@latest
+
 # Copy package files
 COPY package*.json ./
 

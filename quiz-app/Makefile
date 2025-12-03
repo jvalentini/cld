@@ -32,9 +32,22 @@ dev: ## Run dev server (http://localhost:3000)
 	npm run dev
 
 .PHONY: build
-build: ## Build production Docker image
+build: ## Build production Docker image (requires VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY)
+	@if [ -z "$(VITE_SUPABASE_URL)" ] || [ -z "$(VITE_SUPABASE_ANON_KEY)" ]; then \
+		echo "$(YELLOW)⚠️  Error: VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY not set$(NC)"; \
+		echo ""; \
+		echo "$(YELLOW)Options:$(NC)"; \
+		echo "  1. Export variables: export VITE_SUPABASE_URL=... VITE_SUPABASE_ANON_KEY=..."; \
+		echo "  2. Pass as args: make build VITE_SUPABASE_URL=... VITE_SUPABASE_ANON_KEY=..."; \
+		echo "  3. Use docker-compose (recommended): make rebuild (loads .env automatically)"; \
+		exit 1; \
+	fi
 	@echo "$(GREEN)Building Docker image $(IMAGE_NAME)...$(NC)"
-	docker build --build-arg CACHEBUST=$(shell git rev-parse HEAD 2>/dev/null || date +%s) -t $(IMAGE_NAME) .
+	docker build \
+		--build-arg CACHEBUST=$(shell git rev-parse HEAD 2>/dev/null || date +%s) \
+		--build-arg VITE_SUPABASE_URL=$(VITE_SUPABASE_URL) \
+		--build-arg VITE_SUPABASE_ANON_KEY=$(VITE_SUPABASE_ANON_KEY) \
+		-t $(IMAGE_NAME) .
 	@echo "$(GREEN)Image $(IMAGE_NAME) built$(NC)"
 
 .PHONY: run
