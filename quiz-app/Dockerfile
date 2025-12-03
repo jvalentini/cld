@@ -1,7 +1,7 @@
 ARG CACHEBUST=1
 
 # Build stage
-FROM node:18-alpine AS builder
+FROM node:25-alpine AS builder
 ARG CACHEBUST
 ARG VITE_SUPABASE_URL
 ARG VITE_SUPABASE_ANON_KEY
@@ -11,6 +11,9 @@ ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
 ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
 
 WORKDIR /app
+
+# Update npm to latest version to suppress version notices
+RUN npm install -g npm@latest
 
 # Copy package files
 COPY package*.json ./
