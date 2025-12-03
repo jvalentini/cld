@@ -1,7 +1,7 @@
 ARG CACHEBUST=1
 
 # Build stage
-FROM node:18-alpine AS builder
+FROM node:25-alpine AS builder
 ARG CACHEBUST
 ARG VITE_SUPABASE_URL
 ARG VITE_SUPABASE_ANON_KEY
