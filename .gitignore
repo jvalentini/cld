@@ -19,6 +19,7 @@ dist-ssr/
 # -----------------------------
 # Vite-specific
 # -----------------------------
+.env
 .env.local
 .env.*.local          # e.g. .env.development.local
 .vite/                # Vite cache (HMR, etc.)

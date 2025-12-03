@@ -6,10 +6,14 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        # Pass environment variables from .env file to build
+        # Pass environment variables from .env.local file to build
+        # docker-compose automatically reads .env.local when using --env-file flag
         VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
         VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
     ports:
       - "8080:80"
     restart: unless-stopped
     container_name: quiz-app
+    # Explicitly load .env.local for runtime (if needed in future)
+    env_file:
+      - .env.local
