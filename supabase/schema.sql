@@ -332,3 +332,15 @@ COMMENT ON COLUMN users.password_hash IS 'Bcrypt hashed password with salt';
 COMMENT ON COLUMN submissions.user_id IS 'Foreign key to user who submitted the quiz';
 COMMENT ON VIEW quiz_leaderboard IS 'Top scores per quiz with user rankings';
 COMMENT ON VIEW user_activity_leaderboard IS 'Most active users by submission count';
+
+-- Realtime Subscriptions
+-- Enable Realtime for quizzes and submissions tables
+BEGIN;
+  -- Remove tables from publication if they exist to avoid errors
+  ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS quizzes;
+  ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS submissions;
+  
+  -- Add tables to publication
+  ALTER PUBLICATION supabase_realtime ADD TABLE quizzes;
+  ALTER PUBLICATION supabase_realtime ADD TABLE submissions;
+COMMIT;

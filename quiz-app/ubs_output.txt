@@ -1,0 +1,494 @@
+ℹ Created filtered scan workspace at /tmp/tmp.2ic1oXxwsl/scan
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  ██╗   ██╗██╗  ████████╗██╗███╗   ███╗ █████╗ ████████╗███████╗              ║
+║  ██║   ██║██║  ╚══██╔══╝██║████╗ ████║██╔══██╗╚══██╔══╝██╔════╝              ║
+║  ██║   ██║██║     ██║   ██║██╔████╔██║███████║   ██║   █████╗                ║
+║  ██║   ██║██║     ██║   ██║██║╚██╔╝██║██╔══██║   ██║   ██╔══╝                ║
+║  ╚██████╔╝███████╗██║   ██║██║ ╚═╝ ██║██║  ██║   ██║   ███████╗              ║
+║   ╚═════╝ ╚══════╝╚═╝   ╚═╝╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝   ╚══════╝              ║
+║                                                                              ║
+║  ██████╗ ██╗   ██╗ ██████╗         __       __                               ║
+║  ██╔══██╗██║   ██║██╔════╝         \ `-'"-'` /                               ║
+║  ██████╔╝██║   ██║██║  ███╗        / \_   _/ \                               ║
+║  ██╔══██╗██║   ██║██║   ██║        |  d\_/b  |                               ║
+║  ██████╔╝╚██████╔╝╚██████╔╝       .'\   V   /'.                              ║
+║  ╚═════╝  ╚═════╝  ╚═════╝        /   '-...-'   \                            ║
+║                                  | /         \ |                             ║
+║                                  \/\         /\/                             ║
+║                                  ==(||)---(||)==                             ║
+║                                                                              ║
+║  ███████╗  ██████╗   █████╗ ███╗   ██╗███╗   ██╗███████╗██████╗              ║
+║  ██╔════╝  ██╔═══╝  ██╔══██╗████╗  ██║████╗  ██║██╔════╝██╔══██╗             ║
+║  ███████╗  ██║      ███████║██╔██╗ ██║██╔██╗ ██║█████╗  ██████╔╝             ║
+║  ╚════██║  ██║      ██╔══██║██║╚██╗██║██║╚██╗██║██╔══╝  ██╔══██╗             ║
+║  ███████║  ██████╗  ██║  ██║██║ ╚████║██║ ╚████║███████╗██║  ██║             ║
+║  ╚══════╝  ╚═════╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝                  ║
+║                                                                              ║
+║     JS / TS • PYTHON • C / C++ • RUST • GO • JAVA • RUBY • SWIFT             ║
+║                    UBS: ULTIMATE BUG SCANNER • SARIF FUSION ☄️               ║
+║                                                                              ║
+║                                                                              ║
+║                     Night Owl QA                                             ║
+║                     “We see bugs before you do.”                             ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+UBS Meta-Runner v5.0.0  2025-12-06 20:47:10
+Project: /home/jusvalen/code/cld/quiz-app
+Format:  text
+Detected: js
+
+──────── js ────────
+
+╔═══════════════════════════════════════════════════════════════════╗
+║  ██╗   ██╗██╗  ████████╗██╗███╗   ███╗ █████╗ ████████╗███████╗   ║
+║  ██║   ██║██║  ╚══██╔══╝██║████╗ ████║██╔══██╗╚══██╔══╝██╔════╝   ║
+║  ██║   ██║██║     ██║   ██║██╔████╔██║███████║   ██║   █████╗     ║
+║  ██║   ██║██║     ██║   ██║██║╚██╔╝██║██╔══██║   ██║   ██╔══╝     ║
+║  ╚██████╔╝███████╗██║   ██║██║ ╚═╝ ██║██║  ██║   ██║   ███████╗   ║
+║   ╚═════╝ ╚══════╝╚═╝   ╚═╝╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝   ╚══════╝   ║
+║                                                                   ║
+║  ██████╗ ██╗   ██╗ ██████╗          ████████████████████████      ║
+║  ██╔══██╗██║   ██║██╔════╝          ████████████████████████      ║
+║  ██████╔╝██║   ██║██║  ███╗         ████████████████████████      ║
+║  ██╔══██╗██║   ██║██║   ██║         ██████████  ████    ████      ║
+║  ██████╔╝╚██████╔╝╚██████╔╝         ██████████  ██  ████████      ║
+║  ╚═════╝  ╚═════╝  ╚═════╝          ██████████  ████    ████      ║
+║                                     ██████████  ████████  ██      ║
+║                                     ██████████  ██  ████  ██      ║
+║                                     ██████    ██████    ████      ║
+║                                     ████████████████████████      ║
+║                                                                   ║
+║  ███████╗  ██████╗   █████╗ ███╗   ██╗███╗   ██╗███████╗██████╗   ║
+║  ██╔════╝  ██╔═══╝  ██╔══██╗████╗  ██║████╗  ██║██╔════╝██╔══██╗  ║
+║  ███████╗  ██║      ███████║██╔██╗ ██║██╔██╗ ██║█████╗  ██████╔╝  ║
+║  ╚════██║  ██║      ██╔══██║██║╚██╗██║██║╚██╗██║██╔══╝  ██╔══██╗  ║
+║  ███████║  ██████╗  ██║  ██║██║ ╚████║██║ ╚████║███████╗██║  ██║  ║
+║  ╚══════╝  ╚═════╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝       ║
+║                                                                   ║
+║  JavaScript/TypeScript sentinel • DOM, async, security heuristics ║
+║  UBS module: js • AST-grep signal • multi-agent guardrail ready   ║
+║  ASCII homage: aemkei hexagon JS logo                             ║
+║  Run standalone: modules/ubs-js.sh --help                         ║
+║                                                                   ║
+║  Night Owl QA                                                     ║
+║  “We see bugs before you do.”                                     ║
+╚═══════════════════════════════════════════════════════════════════╝
+
+Project:  /home/jusvalen/code/cld/quiz-app
+Started:  2025-12-07T01:47:10Z
+Files:    27 source files (js,jsx,ts,tsx,mjs,cjs)
+Focus areas include NULL SAFETY, SECURITY VULNERABILITIES, Lightweight taint analysis, async pitfalls, and resource lifecycle.
+
+✓ ast-grep available (ast-grep) - full AST analysis enabled
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. NULL SAFETY & DEFENSIVE PROGRAMMING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+▓▓▓ Detects: Null pointer dereferences, missing guards, unsafe property access
+These bugs cause 'Cannot read property of null/undefined' runtime crashes
+
+• Unguarded property access after getElementById/querySelector
+  ✓ OK All DOM queries appear to be guarded
+
+• Optional chaining opportunities (?.)
+  ✓ OK Minimal optional chaining opportunities
+
+• Nullish coalescing opportunities (??)
+
+• Accessing nested properties without guards
+  ℹ Info (6 found)
+    Deep property access detected
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. MATH & ARITHMETIC PITFALLS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+▓▓▓ Detects: Division by zero, NaN propagation, floating-point equality
+Mathematical bugs that produce silent errors or Infinity/NaN values
+
+• Division operations (potential ÷0)
+  ℹ Info (12 found)
+    Division operations found
+
+• Incorrect NaN checks (== NaN instead of Number.isNaN)
+  ✓ OK No direct NaN comparisons
+
+• isNaN() instead of Number.isNaN()
+  ✓ OK All NaN checks use Number.isNaN()
+
+• Floating-point equality (===)
+
+• Modulo by variable (verify non-zero)
+
+• Bitwise operations on non-integers
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. ARRAY & COLLECTION SAFETY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+▓▓▓ Detects: Index out of bounds, mutation bugs, unsafe iteration
+Array bugs cause undefined access, incorrect results, or crashes
+
+• Array access with arithmetic offsets (bounds risk)
+
+• Array.length used in arithmetic without validation
+
+• Mutation of array during iteration
+
+• Array holes (sparse arrays)
+
+• Missing array existence checks before .length
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. TYPE COERCION & COMPARISON TRAPS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+▓▓▓ Detects: Loose equality, type confusion, implicit conversions
+JavaScript's type coercion causes subtle bugs that are hard to debug
+
+• Loose equality (== instead of ===)
+  ✓ OK All comparisons use strict equality
+
+• Comparing different types
+  ℹ Info (3 found)
+    Type comparisons - verify both sides match
+
+• typeof checks with wrong string literals
+
+• Truthy/falsy confusion in conditions
+
+• Implicit string concatenation with +
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. ASYNC/AWAIT & PROMISE PITFALLS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+▓▓▓ Detects: Missing await, unhandled rejections, race conditions
+Async bugs cause unpredictable behavior, crashes, and data corruption
+  ℹ Info (118 found)
+    Async functions found
+    Verifying proper await/error handling...
+
+• Race conditions with Promise.race/any
+
+• Async error path coverage
+  ℹ Info (0 found)
+    Async rule checks
+    ast-grep scan failed
+  ℹ Info (0 found)
+    Async fallback disabled
+    Run with --fail-on-warning to surface missing .catch()/try blocks when ast-grep is unavailable
+
+• React hooks dependency analysis
+  ✓ OK Hooks dependency arrays look accurate
+
+• Type narrowing validation
+  ℹ Info (0 found)
+    Type narrowing helper missing
+    Helper script /home/jusvalen/.local/share/ubs/modules/helpers/type_narrowing_ts.js not found
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. ERROR HANDLING ANTI-PATTERNS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+▓▓▓ Detects: Swallowed errors, missing cleanup, poor error messages
+Bad error handling makes debugging impossible and causes production failures
+
+• Error handling best practices
+  ℹ Info (0 found)
+    Error handling AST rules
+    ast-grep scan failed
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. SECURITY VULNERABILITIES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+▓▓▓ Detects: Code injection, XSS, prototype pollution, timing attacks
+Security bugs expose users to attacks and data breaches
+
+• eval() usage (CRITICAL SECURITY RISK)
+  ✓ OK No eval() detected
+
+• new Function() (eval equivalent)
+
+• innerHTML with potential XSS risk
+  ℹ Info (2 found)
+    innerHTML usage - verify data is trusted
+
+• document.write (deprecated & dangerous)
+
+• Prototype pollution vulnerability
+
+• Hardcoded secrets/credentials
+  🔥 CRITICAL (3 found)
+    Possible hardcoded secrets
+    Use environment variables or secret managers
+      /home/jusvalen/code/cld/quiz-app/e2e/fixtures/test-fixtures.js:176 (https://github.com/jvalentini/cld/blob/36d917a938940e6ee7b092ce44616c566a4dd79d/e2e/fixtures/test-fixtures.js#L176)
+          password: 'TestPassword123!',
+      /home/jusvalen/code/cld/quiz-app/e2e/fixtures/test-fixtures.js:181 (https://github.com/jvalentini/cld/blob/36d917a938940e6ee7b092ce44616c566a4dd79d/e2e/fixtures/test-fixtures.js#L181)
+          password: 'TeacherPass456!',
+      /home/jusvalen/code/cld/quiz-app/e2e/fixtures/test-fixtures.js:186 (https://github.com/jvalentini/cld/blob/36d917a938940e6ee7b092ce44616c566a4dd79d/e2e/fixtures/test-fixtures.js#L186)
+          password: 'AdminPass789!',
+
+• RegExp denial of service (ReDoS) risk
+
+• Lightweight taint analysis
+  ✓ OK No tainted sources reach dangerous sinks
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. FUNCTION & SCOPE ISSUES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+▓▓▓ Detects: Missing return, callback hell, closure leaks
+Function bugs cause incorrect results and memory leaks
+
+• Functions with high parameter count (>5)
+
+• Arrow functions with implicit return confusion
+  ℹ Info (187 found)
+    Arrow functions with { } - verify return intent
+    () => {x:1} returns undefined; wrap object: () => ({x:1}) (https://github.com/jvalentini/cld/blob/36d917a938940e6ee7b092ce44616c566a4dd79d/() => {x#L1)
+
+• Nested callbacks (callback hell)
+  ℹ Info (83 found)
+    Many callback-style functions detected
+    Review for unnecessary nesting; prefer async/await or Promises
+
+• Function declarations inside blocks
+
+• Missing return in functions
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. PARSING & TYPE CONVERSION BUGS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+▓▓▓ Detects: parseInt errors, JSON parsing, date issues
+Parsing bugs cause data corruption and incorrect calculations
+
+• parseInt without radix parameter
+  ℹ Info (3 found)
+    parseInt without explicit radix
+    Specify base (e.g., parseInt(x, 10)) for clarity
+      /home/jusvalen/code/cld/quiz-app/e2e/pages/QuizPage.js:143 (https://github.com/jvalentini/cld/blob/36d917a938940e6ee7b092ce44616c566a4dd79d/e2e/pages/QuizPage.js#L143)
+          return match ? parseInt(match[1]) : 0
+      /home/jusvalen/code/cld/quiz-app/e2e/pages/QuizPage.js:149 (https://github.com/jvalentini/cld/blob/36d917a938940e6ee7b092ce44616c566a4dd79d/e2e/pages/QuizPage.js#L149)
+          return match ? parseInt(match[1]) : 0
+      /home/jusvalen/code/cld/quiz-app/e2e/pages/QuizPage.js:155 (https://github.com/jvalentini/cld/blob/36d917a938940e6ee7b092ce44616c566a4dd79d/e2e/pages/QuizPage.js#L155)
+          return match ? parseInt(match[1]) : 0
+
+• JSON.parse without try/catch
+  ⚠ Warning (1 found)
+    JSON.parse without error handling
+    Wrap in try/catch or validate input first
+    test/App.spec.js:544  const parsed = JSON.parse(saved) (https://github.com/jvalentini/cld/blob/36d917a938940e6ee7b092ce44616c566a4dd79d/test/App.spec.js#L544)
+
+• parseFloat precision issues
+
+• new Date() without validation
+
+• Implicit numeric conversion via unary +
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+10. CONTROL FLOW GOTCHAS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+▓▓▓ Detects: Missing breaks, unreachable code, confusing conditions
+Control flow bugs cause logic errors and unexpected behavior
+
+• Switch cases without break/return
+  ⚠ Warning (5 found)
+    Switch cases may be missing break
+    Add break or /* falls through */
+
+• Switch without default case
+
+• Nested ternaries (readability nightmare)
+
+• Unreachable code after return
+
+• Empty if/else blocks
+
+• Yoda conditions (confusing style)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+11. DEBUGGING & PRODUCTION CODE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+▓▓▓ Detects: console.log, debugger, dead code
+Debug code left in production affects performance and leaks info
+  ℹ Info (36 found)
+    console.* statements found
+
+• debugger statements (MUST REMOVE)
+  🔥 CRITICAL (1 found)
+    debugger statements in code
+    Remove before commit
+      /home/jusvalen/code/cld/quiz-app/eslint.config.js:27 (https://github.com/jvalentini/cld/blob/36d917a938940e6ee7b092ce44616c566a4dd79d/eslint.config.js#L27)
+            'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
+
+• alert/confirm/prompt (blocking UI)
+
+• console.log with sensitive data
+  🔥 CRITICAL (1 found)
+    Logging sensitive data
+    Remove sensitive logs
+      /home/jusvalen/code/cld/quiz-app/src/composables/useAuth.js:46 (https://github.com/jvalentini/cld/blob/36d917a938940e6ee7b092ce44616c566a4dd79d/src/composables/useAuth.js#L46)
+            console.log('User restored from token:', savedUser)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+12. MEMORY LEAKS & PERFORMANCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+▓▓▓ Detects: Event listener leaks, closures, heavy operations
+Performance bugs cause slowdowns, crashes, and poor user experience
+  ℹ Info (0 found)
+    Event listeners attached
+  ℹ Info (0 found)
+    Event listeners removed
+
+• setInterval without clearInterval
+
+• setTimeout without clearTimeout
+
+• Large inline arrays/objects (memory waste)
+
+• Synchronous operations in loops
+
+• String concatenation in loops
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+13. VARIABLE & SCOPE ISSUES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+▓▓▓ Detects: var usage, global pollution, shadowing
+Scope bugs cause hard-to-debug variable conflicts
+
+• var declarations (use let/const)
+  ⚠ Warning (17 found)
+    Using 'var' instead of let/const
+    var is function-scoped and hoisted
+
+• Global variable pollution
+
+• Variable shadowing
+
+• const reassignment attempts
+  ✓ OK Using const appropriately
+
+• Unused variables (heuristic)
+  ℹ Info (730 found)
+    Many variable declarations - check for unused vars
+    Use ESLint no-unused-vars for precision
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+14. CODE QUALITY MARKERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+▓▓▓ Detects: TODO, FIXME, HACK, XXX comments
+Technical debt markers indicate incomplete or problematic code
+  ✓ OK No technical debt markers
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+15. REGEX & STRING SAFETY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+▓▓▓ Detects: ReDoS, regex injection, string escaping issues
+Regex bugs cause performance issues and security vulnerabilities
+
+• ReDoS vulnerable patterns
+
+• RegExp with user input (injection risk)
+
+• Missing string escaping in regex
+
+• Case-insensitive regex without /i flag
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+16. DOM MANIPULATION SAFETY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+▓▓▓ Detects: Missing null checks, inefficient queries, event leaks
+DOM bugs cause crashes and performance issues
+
+• querySelector/getElementById calls
+  ℹ Info (0 found)
+    DOM queries found
+    Ensure all queries have null checks before property access
+
+• Uncached DOM queries in loops
+
+• Direct style manipulation
+
+• Missing event delegation opportunities
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+17. TYPESCRIPT STRICTNESS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+▓▓▓ Detects: any usage, non-null assertions, implicit any
+Looser types reduce safety and increase runtime failures
+
+• Explicit any annotations
+
+• Non-null assertion operator (!)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+18. NODE.JS I/O & MODULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+▓▓▓ Detects: sync filesystem calls, dynamic require(), JSON.parse(file) without try
+Sync I/O blocks event loop; dynamic requires hinder bundling and caching
+
+• Synchronous fs operations
+
+• Dynamic require()
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+19. RESOURCE LIFECYCLE CORRELATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+▓▓▓ Detects: Acquire/release imbalances for listeners, timers, observers
+Unreleased resources leak memory, CPU, and event handlers across renders
+
+• Resource lifecycle correlation
+  ℹ Info (0 found)
+    Resource lifecycle checks
+    ast-grep scan failed
+  ✓ OK All tracked resource acquisitions have matching cleanups
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AST-GREP RULE PACK FINDINGS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠ ast-grep scan subcommand unavailable; rule-pack mode skipped.
+
+═══════════════════════════════════════════════════════════════════════════
+                    🎯 SCAN COMPLETE 🎯                                  
+═══════════════════════════════════════════════════════════════════════════
+
+Summary Statistics:
+  Files scanned:    27
+  Critical issues:  5
+  Warning issues:   23
+  Info items:       1180
+
+Priority Actions:
+  🔥 FIX CRITICAL ISSUES IMMEDIATELY
+  These cause crashes, security vulnerabilities, or data corruption
+  ⚠ Review and fix WARNING items
+  These cause bugs, performance issues, or maintenance problems
+  ℹ Consider INFO suggestions
+  Code quality improvements and best practices
+
+Scan completed at: 2025-12-07T01:47:20Z
+
+Tip: Run with -v/--verbose for more code samples per finding.
+Add to pre-commit: ./ubs --ci --fail-on-warning . > bug-scan-report.txt
+
+
+──────── Combined Summary ────────
+Files: 27
+Critical: 5
+Warning: 23
+Info: 1180

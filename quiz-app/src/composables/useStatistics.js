@@ -3,7 +3,7 @@
  * Manages quiz statistics state and operations
  */
 
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { supabase } from '../supabaseClient.js'
 import { getCorrectRateClass } from '../utils/questionTypes.js'
 import { calculatePercentage } from '../utils/formatters.js'
@@ -18,6 +18,148 @@ const answerStats = ref([])
 const selectedStatsQuizId = ref(null)
 const loadingStats = ref(false)
 const statsError = ref(null)
+
+// Realtime subscription
+let statsSubscription = null
+let statsSubCount = 0
+
+/**
+ * Load all quiz statistics
+ */
+async function loadAllQuizStats() {
+  loadingStats.value = true
+  statsError.value = null
+
+  try {
+    const { data, error } = await supabase.from('quiz_statistics').select('*').order('quiz_name')
+
+    if (error) throw error
+
+    allQuizStats.value = data || []
+  } catch (err) {
+    console.error('Error loading quiz statistics:', err)
+    statsError.value = `Failed to load statistics: ${err.message}`
+  } finally {
+    loadingStats.value = false
+  }
+}
+
+/**
+ * Load statistics for a specific quiz
+ * @param {number} quizId - Quiz ID
+ */
+async function loadQuizStats(quizId) {
+  selectedStatsQuizId.value = quizId
+  loadingStats.value = true
+  statsError.value = null
+
+  try {
+    // Load quiz overview stats
+    const { data: quizData, error: quizError } = await supabase
+      .from('quiz_statistics')
+      .select('*')
+      .eq('quiz_id', quizId)
+      .single()
+
+    if (quizError) throw quizError
+
+    selectedQuizStats.value = quizData
+
+    // Load question statistics
+    const { data: questionData, error: questionError } = await supabase
+      .from('question_statistics')
+      .select('*')
+      .eq('quiz_id', quizId)
+      .order('question_id')
+
+    if (questionError) throw questionError
+
+    questionStats.value = questionData || []
+  } catch (err) {
+    console.error('Error loading quiz statistics:', err)
+    statsError.value = `Failed to load quiz statistics: ${err.message}`
+    throw err // Re-throw for navigation handling
+  } finally {
+    loadingStats.value = false
+  }
+}
+
+/**
+ * Load details for a specific question
+ * @param {number} questionId - Question ID
+ */
+async function loadQuestionDetail(questionId) {
+  selectedQuestionId.value = questionId
+  loadingStats.value = true
+  statsError.value = null
+
+  try {
+    // Load question statistics
+    const { data: questionData, error: questionError } = await supabase
+      .from('question_statistics')
+      .select('*')
+      .eq('question_id', questionId)
+      .single()
+
+    if (questionError) throw questionError
+
+    selectedQuestionStats.value = questionData
+
+    // Load answer statistics
+    const { data: answerData, error: answerError } = await supabase
+      .from('answer_statistics')
+      .select('*')
+      .eq('question_id', questionId)
+      .order('answer_label')
+
+    if (answerError) throw answerError
+
+    answerStats.value = answerData || []
+  } catch (err) {
+    console.error('Error loading question details:', err)
+    statsError.value = `Failed to load question details: ${err.message}`
+    throw err // Re-throw for navigation handling
+  } finally {
+    loadingStats.value = false
+  }
+}
+
+/**
+ * Subscribe to Supabase Realtime updates for submissions
+ */
+function subscribeToStats() {
+  statsSubCount++
+  if (statsSubscription) return
+
+  console.log('Subscribing to stats updates...')
+  statsSubscription = supabase
+    .channel('public:submissions')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'submissions' }, (payload) => {
+      console.log('Submission received:', payload)
+      // Intelligent refresh based on active view
+      if (selectedQuestionId.value) {
+        loadQuestionDetail(selectedQuestionId.value).catch(console.error)
+      } else if (selectedStatsQuizId.value) {
+        loadQuizStats(selectedStatsQuizId.value).catch(console.error)
+      } else {
+        loadAllQuizStats().catch(console.error)
+      }
+    })
+    .subscribe()
+}
+
+/**
+ * Unsubscribe from stats updates
+ */
+function unsubscribeFromStats() {
+  statsSubCount--
+  if (statsSubCount <= 0 && statsSubscription) {
+    console.log('Unsubscribing from stats updates...')
+    supabase.removeChannel(statsSubscription)
+    statsSubscription = null
+    statsSubCount = 0
+  }
+}
 
 /**
  * Statistics composable
@@ -52,106 +194,6 @@ export function useStatistics() {
 
   // Methods
 
-  /**
-   * Load all quiz statistics
-   */
-  async function loadAllQuizStats() {
-    loadingStats.value = true
-    statsError.value = null
-
-    try {
-      const { data, error } = await supabase.from('quiz_statistics').select('*').order('quiz_name')
-
-      if (error) throw error
-
-      allQuizStats.value = data || []
-    } catch (err) {
-      console.error('Error loading quiz statistics:', err)
-      statsError.value = `Failed to load statistics: ${err.message}`
-    } finally {
-      loadingStats.value = false
-    }
-  }
-
-  /**
-   * Load statistics for a specific quiz
-   * @param {number} quizId - Quiz ID
-   */
-  async function loadQuizStats(quizId) {
-    selectedStatsQuizId.value = quizId
-    loadingStats.value = true
-    statsError.value = null
-
-    try {
-      // Load quiz overview stats
-      const { data: quizData, error: quizError } = await supabase
-        .from('quiz_statistics')
-        .select('*')
-        .eq('quiz_id', quizId)
-        .single()
-
-      if (quizError) throw quizError
-
-      selectedQuizStats.value = quizData
-
-      // Load question statistics
-      const { data: questionData, error: questionError } = await supabase
-        .from('question_statistics')
-        .select('*')
-        .eq('quiz_id', quizId)
-        .order('question_id')
-
-      if (questionError) throw questionError
-
-      questionStats.value = questionData || []
-    } catch (err) {
-      console.error('Error loading quiz statistics:', err)
-      statsError.value = `Failed to load quiz statistics: ${err.message}`
-      throw err // Re-throw for navigation handling
-    } finally {
-      loadingStats.value = false
-    }
-  }
-
-  /**
-   * Load details for a specific question
-   * @param {number} questionId - Question ID
-   */
-  async function loadQuestionDetail(questionId) {
-    selectedQuestionId.value = questionId
-    loadingStats.value = true
-    statsError.value = null
-
-    try {
-      // Load question statistics
-      const { data: questionData, error: questionError } = await supabase
-        .from('question_statistics')
-        .select('*')
-        .eq('question_id', questionId)
-        .single()
-
-      if (questionError) throw questionError
-
-      selectedQuestionStats.value = questionData
-
-      // Load answer statistics
-      const { data: answerData, error: answerError } = await supabase
-        .from('answer_statistics')
-        .select('*')
-        .eq('question_id', questionId)
-        .order('answer_label')
-
-      if (answerError) throw answerError
-
-      answerStats.value = answerData || []
-    } catch (err) {
-      console.error('Error loading question details:', err)
-      statsError.value = `Failed to load question details: ${err.message}`
-      throw err // Re-throw for navigation handling
-    } finally {
-      loadingStats.value = false
-    }
-  }
 
   /**
    * Get answer percentage for a specific answer
@@ -203,6 +245,14 @@ export function useStatistics() {
   function clearError() {
     statsError.value = null
   }
+
+  onMounted(() => {
+    subscribeToStats()
+  })
+
+  onUnmounted(() => {
+    unsubscribeFromStats()
+  })
 
   return {
     // State

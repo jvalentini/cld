@@ -3,7 +3,7 @@
  * Manages quiz state, navigation, and scoring
  */
 
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { supabase } from '../supabaseClient.js'
 import { STORAGE_KEYS, QUESTION_TYPES } from '../utils/constants.js'
 import {
@@ -37,6 +37,67 @@ const uploadedQuizData = ref(null)
 // Error/success state
 const quizError = ref(null)
 const quizSuccess = ref(null)
+
+// Realtime subscription state
+let messageSubscription = null
+let subscriptionCount = 0
+
+/**
+ * Load available quizzes from database
+ */
+async function loadAvailableQuizzes() {
+  loadingQuizzes.value = true
+  quizError.value = null
+
+  try {
+    const { data, error } = await supabase
+      .from('quizzes')
+      .select('id, name, description')
+      .order('name')
+
+    if (error) throw error
+
+    availableQuizzes.value = data
+    console.log('Loaded quizzes:', data.length)
+  } catch (err) {
+    console.error('Error loading quizzes:', err)
+    quizError.value =
+      'Failed to load quizzes from database. Please check your Supabase connection.'
+  } finally {
+    loadingQuizzes.value = false
+  }
+}
+
+/**
+ * Subscribe to Supabase Realtime updates for quizzes
+ */
+function subscribeToQuizzes() {
+  subscriptionCount++
+  if (messageSubscription) return
+
+  console.log('Subscribing to quiz updates...')
+  messageSubscription = supabase
+    .channel('public:quizzes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'quizzes' }, (payload) => {
+      console.log('Quiz update received:', payload)
+      // Refresh the quiz list
+      loadAvailableQuizzes()
+    })
+    .subscribe()
+}
+
+/**
+ * Unsubscribe from quiz updates
+ */
+function unsubscribeFromQuizzes() {
+  subscriptionCount--
+  if (subscriptionCount <= 0 && messageSubscription) {
+    console.log('Unsubscribing from quiz updates...')
+    supabase.removeChannel(messageSubscription)
+    messageSubscription = null
+    subscriptionCount = 0
+  }
+}
 
 /**
  * Quiz composable
@@ -87,31 +148,6 @@ export function useQuiz() {
 
   // Methods
 
-  /**
-   * Load available quizzes from database
-   */
-  async function loadAvailableQuizzes() {
-    loadingQuizzes.value = true
-    quizError.value = null
-
-    try {
-      const { data, error } = await supabase
-        .from('quizzes')
-        .select('id, name, description')
-        .order('name')
-
-      if (error) throw error
-
-      availableQuizzes.value = data
-      console.log('Loaded quizzes:', data.length)
-    } catch (err) {
-      console.error('Error loading quizzes:', err)
-      quizError.value =
-        'Failed to load quizzes from database. Please check your Supabase connection.'
-    } finally {
-      loadingQuizzes.value = false
-    }
-  }
 
   /**
    * Load quiz from database
@@ -626,3 +662,4 @@ export function useQuiz() {
     clearMessages,
   }
 }
+
