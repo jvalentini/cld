@@ -3,7 +3,7 @@
 
 # Development dependencies
 beautifulsoup4==4.14.3
-black==25.11.0
+black==25.12.0
 coverage==7.12.0
 cssselect==1.3.0
 flake8==7.3.0
