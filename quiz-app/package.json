@@ -31,7 +31,7 @@
     ]
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.86.0",
+    "@supabase/supabase-js": "^2.86.2",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.2.3",
     "vue": "^3.4.0"
