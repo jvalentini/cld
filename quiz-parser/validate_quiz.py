@@ -6,7 +6,6 @@ Validates and fixes quiz JSON files for the Vue quiz app
 
 import sys
 import json
-import re
 
 def validate_and_fix_quiz(input_path, output_path=None):
     """
@@ -21,13 +20,11 @@ def validate_and_fix_quiz(input_path, output_path=None):
     
     # Try to read the file with different encodings
     content = None
-    encoding_used = None
     
     for encoding in ['utf-8', 'utf-8-sig', 'latin-1', 'cp1252']:
         try:
             with open(input_path, 'r', encoding=encoding) as f:
                 content = f.read()
-            encoding_used = encoding
             print(f"✓ Successfully read file with encoding: {encoding}")
             break
         except UnicodeDecodeError:
